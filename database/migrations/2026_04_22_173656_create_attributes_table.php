@@ -21,7 +21,13 @@ return new class extends Migration
             $table->string('label');     // "Weight"
             $table->string('unit')->nullable(); // "g", "mm", etc.
             $table->enum('type', ['text', 'number', 'boolean', 'select'])->default('text');
+            $table->boolean('is_filterable')->default(false);
+            $table->boolean('is_comparable')->default(true);
+
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
+
+            $table->unique('name');
         });
     }
 

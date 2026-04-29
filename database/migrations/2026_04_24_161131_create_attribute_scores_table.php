@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('category_attribute', function (Blueprint $table) {
+        Schema::create('attribute_scores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('attribute_id')->constrained()->cascadeOnDelete();
-
-            $table->boolean('is_required')->default(false);
+            $table->decimal('weight', 8,2)->default(1); // bobot
+            $table->boolean('higher_is_better')->default(true);
+            // $table->tinyInteger('score'); //1-5
             $table->timestamps();
-
-            $table->unique(['category_id', 'attribute_id']);
         });
     }
 
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('category_attribute');
+        Schema::dropIfExists('attribute_scores');
     }
 };

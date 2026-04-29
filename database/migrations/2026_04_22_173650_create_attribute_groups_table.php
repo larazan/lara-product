@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('attribute_groups', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('category_id')->constrained();
             $table->string('name'); // e.g. "Display"
+            $table->string('label');  // Engine
             $table->integer('order')->default(0); // optional sorting
+            $table->string('icon')->nullable();
+            $table->integer('score_weight')->default(1);
             $table->timestamps();
         });
     }

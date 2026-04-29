@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('item_attribute_values', function (Blueprint $table) {
+        Schema::create('faqs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('item_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('attribute_id')->constrained()->cascadeOnDelete();
-            $table->string('value')->nullable();
+            $table->json('question');
+            $table->json('answer');
+            $table->boolean('is_active')->default(false);
+            $table->integer('order_position')->default(null)->nullable();
             $table->timestamps();
         });
     }
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('item_attribute_values');
+        Schema::dropIfExists('faqs');
     }
 };

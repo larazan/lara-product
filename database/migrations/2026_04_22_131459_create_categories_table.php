@@ -15,8 +15,12 @@ return new class extends Migration
             $table->id();
             $table->json('name');
             $table->string('slug')->unique();
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            $table->foreign('parent_id')->references('id')->on('categories');
         });
     }
 
