@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
@@ -113,7 +116,7 @@ class Product extends Model
             ->orderBy('sort_order');
     }
 
-     /**
+    /**
      * Product faqs
      */
     public function faqs()
@@ -121,6 +124,59 @@ class Product extends Model
         return $this->hasMany(ProductFaq::class);
     }
 
+    /**
+     * Relasi ke Informasi Nilai Gizi (ProductNutrition)
+     */
+    public function nutrition(): HasOne
+    {
+        return $this->hasOne(ProductNutrition::class);
+    }
+
+    /**
+     * Relasi ke Panduan Cara Penggunaan (ProductUsageInstruction)
+     */
+    public function usageInstructions(): HasMany
+    {
+        return $this->hasMany(ProductInstruction::class)->orderBy('step_number', 'asc');
+    }
+
+    /**
+     * Relasi ke Ingredients (Bahan-bahan Komposisi Produk)
+     */
+    public function ingredients(): BelongsToMany
+    {
+        return $this->belongsToMany(Ingredient::class, 'product_ingredients')
+            ->withPivot(['is_active_ingredient', 'percentage'])
+            ->withTimestamps();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | VARIANT
+    |--------------------------------------------------------------------------
+    */
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    public function activeVariants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)
+            ->where('is_active', true)
+            ->orderBy('sort_order');
+    }
+
+    public function defaultVariant(): HasOne
+    {
+        return $this->hasOne(ProductVariant::class)
+            ->where('is_default', true)
+            ->where('is_active', true);
+    }
+    
     /*
     |--------------------------------------------------------------------------
     | SCOPES
@@ -252,7 +308,7 @@ class Product extends Model
     public function isPublished(): bool
     {
         return $this->published_at &&
-               $this->published_at <= now();
+            $this->published_at <= now();
     }
 
     /**
@@ -278,7 +334,7 @@ class Product extends Model
                     'attribute_id',
                     $group->attributes->pluck('id')
                 )
-                ->filter(fn ($v) => is_numeric($v->value));
+                ->filter(fn($v) => is_numeric($v->value));
 
             if ($values->count() === 0) {
                 continue;
