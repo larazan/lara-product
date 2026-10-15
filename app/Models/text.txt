@@ -1,0 +1,30 @@
+Brand 
+Company
+Country
+
+Category
+Atribute
+AtributeGroup
+AtributeScore
+CategoryAttribute
+
+# Tahap 1 submit produk
+Product
+
+# Tahap 2 attribute / specs produk
+Atribute
+CategoryAttribute
+ProductAttributeValue
+
+# Tahap 3 varian produk
+ProductVariant
+ProductVariantAttributeValue
+
+# Tahap 4 media
+ProductImage
+
+# Tahap 5 Informasi tambahan
+ProductFaq
+ProductInstruction
+ProductNutrition
+ProductSafetyInstruction

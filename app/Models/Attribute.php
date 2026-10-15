@@ -4,17 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\Translatable\HasTranslations;
 
 class Attribute extends Model
 {
     use HasFactory;
+    use HasTranslations;
 
     protected $table = 'attributes';
+
+    public $translatable = ['name', 'label'];
     //
     protected $fillable = [
         'group_id',
         'name',
         'label',
+        'description',
         'unit',
         'type',
         'is_filterable',
@@ -23,6 +29,8 @@ class Attribute extends Model
     ];
 
     protected $casts = [
+        'name'      => 'array',   // JSON multilingual
+        'label'      => 'array',   // JSON multilingual
         'is_filterable' => 'boolean',
         'is_comparable' => 'boolean',
         'sort_order' => 'integer',
@@ -43,6 +51,11 @@ class Attribute extends Model
         return $this->belongsTo(AttributeGroup::class, 'group_id');
     }
 
+    public function attributeGroup()
+    {
+        return $this->belongsTo(AttributeGroup::class);
+    }
+
     /**
      * Attribute used by many categories
      * smartphone memakai battery_mah
@@ -56,6 +69,11 @@ class Attribute extends Model
             'attribute_id',
             'category_id'
         )->withTimestamps();
+    }
+
+    public function scoreConfig(): HasOne
+    {
+        return $this->hasOne(AttributeScore::class);
     }
 
     /**
@@ -94,7 +112,7 @@ class Attribute extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')
-                     ->orderBy('label');
+            ->orderBy('label');
     }
 
     /*

@@ -17,6 +17,10 @@ return new class extends Migration
             $table->foreignId('attribute_id')->constrained()->cascadeOnDelete();
 
             $table->boolean('is_required')->default(false);
+            // Apakah atribut ikut menghitung skor produk?
+            $table->boolean('is_scoring')->default(false);
+
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
 
             $table->unique(['category_id', 'attribute_id']);

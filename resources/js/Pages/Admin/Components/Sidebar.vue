@@ -17,13 +17,13 @@ const menu = [
     href: '/admin/dashboard',
   },
   {
-    label: 'Quizzes',
+    label: 'Products',
     icon: `<path clip-rule="evenodd" fill-rule="evenodd" d="M.99 5.24A2.25 2.25 0 013.25 3h13.5A2.25 2.25 0 0119 5.25l.01 9.5A2.25 2.25 0 0116.76 17H3.26A2.267 2.267 0 011 14.74l-.01-9.5zm8.26 9.52v-.625a.75.75 0 00-.75-.75H3.25a.75.75 0 00-.75.75v.615c0 .414.336.75.75.75h5.373a.75.75 0 00.627-.74zm1.5 0a.75.75 0 00.627.74h5.373a.75.75 0 00.75-.75v-.615a.75.75 0 00-.75-.75H11.5a.75.75 0 00-.75.75v.625zm6.75-3.63v-.625a.75.75 0 00-.75-.75H11.5a.75.75 0 00-.75.75v.625c0 .414.336.75.75.75h5.25a.75.75 0 00.75-.75zm-8.25 0v-.625a.75.75 0 00-.75-.75H3.25a.75.75 0 00-.75.75v.625c0 .414.336.75.75.75H8.5a.75.75 0 00.75-.75zM17.5 7.5v-.625a.75.75 0 00-.75-.75H11.5a.75.75 0 00-.75.75V7.5c0 .414.336.75.75.75h5.25a.75.75 0 00.75-.75zm-8.25 0v-.625a.75.75 0 00-.75-.75H3.25a.75.75 0 00-.75.75V7.5c0 .414.336.75.75.75H8.5a.75.75 0 00.75-.75z"></path>`,
     children: [
-      { label: 'Quiz', href: '/admin/quizzes' },
-      { label: 'Question', href: '/admin/questions' },
+      { label: 'Product', href: '/admin/products' },
+      { label: 'Brand', href: '/admin/brands' },
+      { label: 'Company', href: '/admin/companies' },
       { label: 'Category', href: '/admin/categories' },
-      { label: 'Type', href: '/admin/types' },
     ],
   },
   {
@@ -93,101 +93,90 @@ const menu = [
 
 // initialize components based on data attribute selectors
 onMounted(() => {
-    initFlowbite();
+  initFlowbite();
 })
 </script>
 
 <template>
-    <aside id="sidebar" class="fixed top-0 left-0 z-20 flex flex-col flex-shrink-0 hidden w-64 h-full pt-16 font-normal duration-75 lg:flex transition-width" aria-label="Sidebar">
-  <div class="relative flex flex-col flex-1 min-h-0 pt-0 bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-    <div class="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
-      <div class="flex-1 px-3 space-y-1 bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-        <ul class="pb-2 space-y-2">
-          <li>
-            <form action="#" method="GET" class="lg:hidden">
-              <label for="mobile-search" class="sr-only">Search</label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+  <aside id="sidebar"
+    class="fixed top-0 left-0 z-20 flex flex-col flex-shrink-0 hidden w-64 h-full pt-16 font-normal duration-75 lg:flex transition-width"
+    aria-label="Sidebar">
+    <div
+      class="relative flex flex-col flex-1 min-h-0 pt-0 bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+      <div class="flex flex-col flex-1 pt-5 pb-4 overflow-y-auto">
+        <div class="flex-1 px-3 space-y-1 bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+          <ul class="pb-2 space-y-2">
+            <li>
+              <form action="#" method="GET" class="lg:hidden">
+                <label for="mobile-search" class="sr-only">Search</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd"
+                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                        clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+                  <input type="text" name="email" id="mobile-search"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                    placeholder="Search">
                 </div>
-                <input type="text" name="email" id="mobile-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Search">
-              </div>
-            </form>
-          </li>
-          <!--  -->
-          <template v-for="item in menu" :key="item.label">
-          <!-- If item has children = dropdown -->
-          <li v-if="item.children">
-            <button
-              type="button"
-              class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group 
+              </form>
+            </li>
+            <!--  -->
+            <template v-for="item in menu" :key="item.label">
+              <!-- If item has children = dropdown -->
+              <li v-if="item.children">
+                <button type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group 
                     hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-              @click="openDropdown === item.label ? openDropdown = null : openDropdown = item.label"
-            >
-              <svg
-                class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-75 group-hover:text-gray-900 
-                      dark:text-gray-400 dark:group-hover:text-white"
-                fill="currentColor" viewBox="0 0 20 20" v-html="item.icon" />
-              <span class="flex-1 ml-3 text-left whitespace-nowrap">{{ item.label }}</span>
+                  @click="openDropdown === item.label ? openDropdown = null : openDropdown = item.label">
+                  <svg class="flex-shrink-0 w-6 h-6 text-gray-500 transition duration-75 group-hover:text-gray-900 
+                      dark:text-gray-400 dark:group-hover:text-white" fill="currentColor" viewBox="0 0 20 20"
+                    v-html="item.icon" />
+                  <span class="flex-1 ml-3 text-left whitespace-nowrap">{{ item.label }}</span>
 
-              <svg
-                class="w-6 h-6 transform transition-transform"
-                :class="{ 'rotate-180': openDropdown === item.label }"
-                fill="currentColor" viewBox="0 0 20 20"
-              >
-                <path fill-rule="evenodd"
-                      d="M5.293 7.293a1 1 0 011.414 0L10 
+                  <svg class="w-6 h-6 transform transition-transform"
+                    :class="{ 'rotate-180': openDropdown === item.label }" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 
                          10.586l3.293-3.293a1 1 0 111.414 
                          1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 
                          1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </button>
+                  </svg>
+                </button>
 
-            <ul
-  class="py-2 space-y-2 transition-all duration-300 overflow-hidden"
-  :class="[
-    openDropdown === item.label || item.children.some(c => isActive(c.href))
-      ? 'max-h-96 opacity-100'
-      : 'max-h-0 opacity-0 hidden'
-  ]"
->
-              <li v-for="child in item.children" :key="child.href">
-                <Link
-                  :href="child.href"
-                  class="flex items-center p-2 text-base text-gray-900 transition duration-75 rounded-lg pl-11 
+                <ul class="py-2 space-y-2 transition-all duration-300 overflow-hidden" :class="[
+                  openDropdown === item.label || item.children.some(c => isActive(c.href))
+                    ? 'max-h-96 opacity-100'
+                    : 'max-h-0 opacity-0 hidden'
+                ]">
+                  <li v-for="child in item.children" :key="child.href">
+                    <Link :href="child.href" class="flex items-center p-2 text-base text-gray-900 transition duration-75 rounded-lg pl-11 
                         group hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-                  :class="{ 'bg-gray-200 dark:bg-gray-800 font-semibold': isActive(child.href) }"
-                >
-                  {{ child.label }}
+                      :class="{ 'bg-gray-200 dark:bg-gray-800 font-semibold': isActive(child.href) }">
+                      {{ child.label }}
+                    </Link>
+                  </li>
+                </ul>
+              </li>
+
+              <!-- Regular single link -->
+              <li v-else>
+                <Link :href="item.href" class="flex items-center p-2 text-base text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 
+                     dark:hover:bg-gray-700" :class="{ 'bg-gray-200 dark:bg-gray-700': isActive(item.href) }">
+                  <svg class="w-6 h-6 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 
+                      dark:group-hover:text-white" fill="currentColor" viewBox="0 0 20 20" v-html="item.icon" />
+                  <span class="ml-3">{{ item.label }}</span>
                 </Link>
               </li>
-            </ul>
-          </li>
+            </template>
 
-          <!-- Regular single link -->
-          <li v-else>
-            <Link
-              :href="item.href"
-              class="flex items-center p-2 text-base text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 
-                     dark:hover:bg-gray-700"
-              :class="{ 'bg-gray-200 dark:bg-gray-700': isActive(item.href) }"
-            >
-              <svg
-                class="w-6 h-6 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 
-                      dark:group-hover:text-white"
-                fill="currentColor" viewBox="0 0 20 20" v-html="item.icon" />
-              <span class="ml-3">{{ item.label }}</span>
-            </Link>
-          </li>
-        </template>
-         
-        </ul>
-        
+          </ul>
+
+        </div>
       </div>
-    </div>
-    
-  </div>
-</aside>
-<div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
-</template>
 
+    </div>
+  </aside>
+  <div class="fixed inset-0 z-10 hidden bg-gray-900/50 dark:bg-gray-900/90" id="sidebarBackdrop"></div>
+</template>

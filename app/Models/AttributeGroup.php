@@ -4,14 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Translatable\HasTranslations;
 
 class AttributeGroup extends Model
 {
     //
     use HasFactory;
+    use HasTranslations;
 
     protected $table = 'attribute_groups';
-
+    public $translatable = ['name', 'label'];
+    //
     protected $fillable = [
         'category_id',
         'name',
@@ -22,6 +25,8 @@ class AttributeGroup extends Model
     ];
 
     protected $casts = [
+        'name'      => 'array',   // JSON multilingual
+        'label'      => 'array',   // JSON multilingual
         'category_id'   => 'integer',
         'order'         => 'integer',
         'score_weight'  => 'integer',
@@ -68,7 +73,7 @@ class AttributeGroup extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('order')
-                     ->orderBy('label');
+            ->orderBy('label');
     }
 
     /**

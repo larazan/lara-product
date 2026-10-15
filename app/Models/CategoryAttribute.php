@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CategoryAttribute extends Model
 {
@@ -15,6 +16,8 @@ class CategoryAttribute extends Model
         'category_id',
         'attribute_id',
         'is_required',
+        'is_scoring',
+        'sort_order',
     ];
 
     protected $casts = [
@@ -43,6 +46,11 @@ class CategoryAttribute extends Model
     public function attribute()
     {
         return $this->belongsTo(Attribute::class);
+    }
+
+    public function attributeScore(): HasOne
+    {
+        return $this->hasOne(AttributeScore::class);
     }
 
     /**

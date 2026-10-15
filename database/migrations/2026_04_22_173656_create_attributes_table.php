@@ -17,8 +17,11 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('attribute_groups')
                 ->nullOnDelete();
-            $table->string('name');      // "weight"
-            $table->string('label');     // "Weight"
+            // $table->string('name');      // "weight"
+            $table->json('name');
+            $table->json('label');
+            // $table->string('label');     // "Weight"
+            $table->text('description')->nullable();
             $table->string('unit')->nullable(); // "g", "mm", etc.
             $table->enum('type', ['text', 'number', 'boolean', 'select'])->default('text');
             $table->boolean('is_filterable')->default(false);
