@@ -82,7 +82,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::put('/brands/{brand}/toggle', [BrandAdminController::class, 'toggle'])->name('admin.brands.toggle');
     Route::delete('/brands/bulk-delete', [BrandAdminController::class, 'bulkDelete'])->name('admin.brands.bulk-delete');
 
-
     // category
     Route::get('/categories', [CategoryAdminController::class, 'index'])->name('admin.category.index');
     Route::post('/category/create', [CategoryAdminController::class, 'store'])->name('admin.category.create');
@@ -97,6 +96,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::patch('/category-article/update/{id}', [CategoryArticleController::class, 'update'])->name('admin.category-article.update');
     Route::delete('/category-article/delete/{id}', [CategoryArticleController::class, 'destroy'])->name('admin.category-article.destroy');
     Route::put('/category-articles/{id}/toggle', [CategoryArticleController::class, 'toggle'])->name('admin.category-article.toggle');
+
+    // category attribute
+    Route::resource(
+        'category-attributes',
+        CategoryAttributeController::class
+    )->except(['show']);
+    Route::get('/category-attributes', [CategoryAttributeController::class, 'index'])->name('admin.attribute-groups.index');
+    Route::post('/category-attribute/create', [CategoryAttributeController::class, 'store'])->name('admin.attribute-group.create');
+    Route::put('/category-attribute/update/{id}', [CategoryAttributeController::class, 'update'])->name('admin.attribute-group.update');
+    Route::delete('/category-attribute/delete/{id}', [CategoryAttributeController::class, 'destroy'])->name('admin.attribute-group.destroy');
+    Route::put('/category-attributes/{attribute}/require', [CategoryAttributeController::class, 'toggle'])->name('admin.attribute-groups.toggle');
+    Route::put('/category-attributes/{attribute}/score', [CategoryAttributeController::class, 'toggle'])->name('admin.attribute-groups.toggle');
+    Route::delete('/category-attributes/bulk-delete', [CategoryAttributeController::class, 'bulkDelete'])->name('admin.attribute-groups.bulk-delete');
 
     // company
     Route::get('/companies', [CompanyAdminController::class, 'index'])->name('admin.companies.index');

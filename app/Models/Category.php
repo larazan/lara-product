@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Sluggable\HasSlug; // Import HasSlug
 use Spatie\Sluggable\SlugOptions; // Import SlugOptions
 use Spatie\Translatable\HasTranslations;
@@ -23,6 +24,7 @@ class Category extends Model
         'slug',
         'parent_id',
         'description',
+        'icon_svg',
         'is_active',
     ];
 
@@ -36,11 +38,11 @@ class Category extends Model
         return 'slug';
     }
 
-    
-     /**
+
+    /**
      * Get the options for generating the slug.
      */
-    public function getSlugOptions() : SlugOptions
+    public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom('name') // Generate slug from the 'name' attribute (translatable)
@@ -75,6 +77,17 @@ class Category extends Model
     {
         return $this->hasMany(Category::class, 'parent_id')
             ->orderBy('id');
+    }
+
+    //  public function children(): HasMany
+    // {
+    //     return $this->hasMany(self::class, 'parent_id')
+    //         ->orderBy('sort_order');
+    // }
+
+    public function activeChildren(): HasMany
+    {
+        return $this->children()->where('is_active', true);
     }
 
     /**
@@ -115,8 +128,8 @@ class Category extends Model
             'category_id',
             'attribute_id'
         )
-        ->withPivot('is_required')
-        ->withTimestamps();
+            ->withPivot('is_required')
+            ->withTimestamps();
     }
 
     /*

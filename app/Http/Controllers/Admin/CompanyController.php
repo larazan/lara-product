@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Company;
 use App\Http\Controllers\Controller;
+use App\Models\Country;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
@@ -29,9 +30,12 @@ class CompanyController extends Controller
             ->paginate($page)
             ->withQueryString();
 
+        $countries = Country::orderBy('name', 'desc')->get();
+
         return Inertia::render('Admin/Company/Index', [
             'page' => $page,
             'companies' => $companies,
+            'countries' => $countries,
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
         ]);
@@ -44,8 +48,12 @@ class CompanyController extends Controller
         ]);
 
         $company = new Company();
+        $company->country_id = $request->countryId;
         $company->name = $request->name;
+        $company->description = $request->description;
+        $company->legal_name = $request->legalName;
         $company->website = $request->website;
+        $company->email = $request->email;
 
         // upload image
         if ($request->hasFile('image')) {
@@ -67,7 +75,7 @@ class CompanyController extends Controller
             $encodedImage = $img->toWebp(quality: 80);
 
             // Define the storage path (e.g., 'public/uploads')
-            $filePath = 'uploads/categories/' . $fileName;
+            $filePath = 'uploads/companies/' . $fileName;
 
             // Store the WebP image using Laravel's Storage facade
             Storage::disk('public')->put($filePath, $encodedImage);
@@ -89,8 +97,12 @@ class CompanyController extends Controller
 
         $company = Company::findOrFail($id);
 
+        $company->country_id = $request->countryId;
         $company->name = $request->name;
+        $company->description = $request->description;
+        $company->legal_name = $request->legalName;
         $company->website = $request->website;
+        $company->email = $request->email;
 
         // upload image
         if ($request->hasFile('image')) {

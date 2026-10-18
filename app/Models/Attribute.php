@@ -18,6 +18,7 @@ class Attribute extends Model
     //
     protected $fillable = [
         'group_id',
+        'slug',
         'name',
         'label',
         'description',
@@ -26,6 +27,8 @@ class Attribute extends Model
         'is_filterable',
         'is_comparable',
         'sort_order',
+        'is_active',
+        'icon_svg',
     ];
 
     protected $casts = [

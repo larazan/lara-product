@@ -15,10 +15,30 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
+            // Informasi perusahaan
+            $table->string('legal_name')->nullable();
+            $table->text('description')->nullable();
+
+            // Media dan kontak resmi
             $table->string('logo')->nullable();
             $table->string('website')->nullable();
+            $table->string('email')->nullable();
+
+            // Negara asal atau negara registrasi perusahaan
+            $table->foreignId('country_id')
+                ->nullable()
+                ->constrained('countries')
+                ->nullOnDelete();
+
+            // Status
             $table->boolean('is_active')->default(true);
+
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('name');
+            $table->index('country_id');
+            $table->index('is_active');
         });
     }
 

@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('product_faqs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-            $table->string('question');
-            $table->text('answer');
+            $table->json('question');
+            $table->json('answer');
             $table->boolean('is_active')->default(true);
-            $table->integer('order')->default(0);
+            $table->integer('order_position')->default(0);
             $table->timestamps();
         });
     }

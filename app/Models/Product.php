@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Product extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $table = 'products';
 
@@ -21,10 +22,15 @@ class Product extends Model
         'brand_id',
         'company_id',
         'country_id',
+
         'name',
         'slug',
+        'model_number',
         'description',
         'year',
+        'meta_title',
+        'meta_description',
+        'metadata',
         'is_featured',
         'is_active',
         'published_at',
@@ -148,6 +154,21 @@ class Product extends Model
         return $this->belongsToMany(Ingredient::class, 'product_ingredients')
             ->withPivot(['is_active_ingredient', 'percentage'])
             ->withTimestamps();
+    }
+
+    /**
+     * Relasi ke Affiliates 
+     */
+    public function affiliates(): HasMany
+    {
+        return $this->hasMany(ProductAffiliate::class);
+    }
+
+    public function activeAffiliates(): HasMany
+    {
+        return $this->affiliates()
+            ->where('is_active', true)
+            ->orderBy('sort_order');
     }
 
     /*

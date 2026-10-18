@@ -24,6 +24,7 @@ ProductVariantAttributeValue
 ProductImage
 
 # Tahap 5 Informasi tambahan
+ProductAffiliate
 ProductFaq
 ProductInstruction
 ProductNutrition

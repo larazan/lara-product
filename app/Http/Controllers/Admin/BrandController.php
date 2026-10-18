@@ -45,6 +45,7 @@ class BrandController extends Controller
 
         $brand = new Brand();
         $brand->name = $request->name;
+        $brand->description = $request->description;
         $brand->website = $request->website;
 
         // upload image
@@ -90,6 +91,7 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
 
         $brand->name = $request->name;
+        $brand->description = $request->description;
         $brand->website = $request->website;
 
         // upload image
@@ -115,7 +117,7 @@ class BrandController extends Controller
             $encodedImage = $img->toWebp(quality: 80);
 
             // Define the storage path (e.g., 'public/uploads')
-            $filePath = 'uploads/categories/' . $fileName;
+            $filePath = 'uploads/brands/' . $fileName;
 
             // Store the WebP image using Laravel's Storage facade
             Storage::disk('public')->put($filePath, $encodedImage);
