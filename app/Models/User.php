@@ -25,6 +25,9 @@ class User extends Authenticatable
         'bio',
         'password',
         'image',
+        'role',
+        'google_id',
+        'google_type',
     ];
 
     /**
@@ -48,5 +51,30 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function scopeFilter($query, array $filters)
+    {
+        if ($filters['search'] ?? false) {
+            $query->where(function ($q) {
+                $q->where('name', 'like', '%' . request('search') . '%')
+                    ->orWhere('email', 'like', '%' . request('search') . '%');
+            });
+        }
+
+        if ($filters['user_role'] ?? false) {
+            $query->where('role', request('user_role'));
+        }
+    }
+
+    public function bookmarkedProducts()
+    {
+        return $this->belongsToMany(Product::class, 'bookmarks')
+            ->withTimestamps();
     }
 }
