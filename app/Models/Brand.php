@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug; // Import HasSlug
 use Spatie\Sluggable\SlugOptions; // Import 
@@ -16,6 +17,7 @@ class Brand extends Model
 
     //
     protected $fillable = [
+        'company_id',
         'name',
         'slug',
         'description',
@@ -45,6 +47,11 @@ class Brand extends Model
     public function products()
     {
         return $this->hasMany(Product::class, 'brand_id', 'id');
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     /**

@@ -72,6 +72,11 @@ class User extends Authenticatable
         }
     }
 
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+
     public function bookmarkedProducts()
     {
         return $this->belongsToMany(Product::class, 'bookmarks')
