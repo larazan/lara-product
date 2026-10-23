@@ -2,7 +2,6 @@
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
-import { Mathematics } from '@tiptap/extension-mathematics'
 import { watch } from 'vue'
 
 import BoldIcon from 'vue-material-design-icons/FormatBold.vue'
@@ -17,9 +16,9 @@ import CodeIcon from 'vue-material-design-icons/CodeTags.vue'
 import HorizontalRuleIcon from 'vue-material-design-icons/Minus.vue'
 import UndoIcon from 'vue-material-design-icons/Undo.vue'
 import RedoIcon from 'vue-material-design-icons/Redo.vue'
-import FunctionIcon from 'vue-material-design-icons/Function.vue'
+// import FunctionIcon from 'vue-material-design-icons/Function.vue'
 
-import 'katex/dist/katex.min.css'
+// import 'katex/dist/katex.min.css'
 
 const props = defineProps({
     modelValue: String,
@@ -36,36 +35,36 @@ const editor = useEditor({
     extensions: [
         StarterKit,
         Underline,
-        Mathematics.configure({
-            inlineOptions: {
-                onClick: (node, pos) => {
-                    // you can do anything on click, e.g. open a dialog to edit the math node
-                    // or just a prompt to edit the LaTeX code for a quick prototype
-                    const katex = prompt('Enter new calculation:', node.attrs.latex)
-                    if (katex) {
-                        editor.chain().setNodeSelection(pos).updateInlineMath({ latex: katex }).focus().run()
-                    }
-                },
-            },
-            blockOptions: {
-                onClick: (node, pos) => {
-                    // you can do anything on click, e.g. open a dialog to edit the math node
-                    // or just a prompt to edit the LaTeX code for a quick prototype
-                    const katex = prompt('Enter new calculation:', node.attrs.latex)
-                    if (katex) {
-                        editor.chain().setNodeSelection(pos).updateBlockMath({ latex: katex }).focus().run()
-                    }
-                },
-            },
-            katexOptions: {
-                // optional options for the KaTeX renderer
-                throwOnError: false,
-                macros: {
-                    '\\R': '\\mathbb{R}',
-                    '\\N': '\\mathbb{N}',
-                },
-            },
-        }),
+        // Mathematics.configure({
+        //     inlineOptions: {
+        //         onClick: (node, pos) => {
+        //             // you can do anything on click, e.g. open a dialog to edit the math node
+        //             // or just a prompt to edit the LaTeX code for a quick prototype
+        //             const katex = prompt('Enter new calculation:', node.attrs.latex)
+        //             if (katex) {
+        //                 editor.chain().setNodeSelection(pos).updateInlineMath({ latex: katex }).focus().run()
+        //             }
+        //         },
+        //     },
+        //     blockOptions: {
+        //         onClick: (node, pos) => {
+        //             // you can do anything on click, e.g. open a dialog to edit the math node
+        //             // or just a prompt to edit the LaTeX code for a quick prototype
+        //             const katex = prompt('Enter new calculation:', node.attrs.latex)
+        //             if (katex) {
+        //                 editor.chain().setNodeSelection(pos).updateBlockMath({ latex: katex }).focus().run()
+        //             }
+        //         },
+        //     },
+        //     katexOptions: {
+        //         // optional options for the KaTeX renderer
+        //         throwOnError: false,
+        //         macros: {
+        //             '\\R': '\\mathbb{R}',
+        //             '\\N': '\\mathbb{N}',
+        //         },
+        //     },
+        // }),
     ],
     onUpdate: ({ editor }) => {
         emit('update:modelValue', editor.getHTML())
@@ -79,36 +78,39 @@ const editor = useEditor({
 })
 
 watch(
-  () => props.modelValue,
-  (value) => {
-    if (!editor.value) return
+    () => props.modelValue,
+    (value) => {
+        if (!editor.value) return
 
-    if (editor.value.getHTML() !== value) {
-      editor.value.commands.setContent(value || '', false)
+        if (editor.value.getHTML() !== value) {
+            editor.value.commands.setContent(value || '', false)
+        }
     }
-  }
 )
 
 // 
-const insertInlineMath = () => {
-    const latex = prompt('Insert LaTeX:')
-    if (!latex) return
+// const insertInlineMath = () => {
+//     const latex = prompt('Insert LaTeX:')
+//     if (!latex) return
 
-    editor
-        .chain()
-        .focus()
-        .insertInlineMath({ latex })
-        .run()
-}
+//     editor
+//         .chain()
+//         .focus()
+//         .insertInlineMath({ latex })
+//         .run()
+// }
 </script>
 
 <style>
-    .tiptap-editor .ProseMirror {
-        min-height: 100px;   /* change height */
-        max-height: 150px;   /* optional */
-        overflow-y: auto;    /* scroll */
-        /* padding: 8px; */
-    }
+.tiptap-editor .ProseMirror {
+    min-height: 100px;
+    /* change height */
+    max-height: 150px;
+    /* optional */
+    overflow-y: auto;
+    /* scroll */
+    /* padding: 8px; */
+}
 </style>
 
 <template>
@@ -153,9 +155,7 @@ const insertInlineMath = () => {
                 :class="{ 'bg-gray-200 rounded': editor.isActive('code') }" class="p-1">
                 <CodeIcon title="Code" />
             </button>
-            <button @click="insertInlineMath" class="p-1 disabled:text-gray-400">
-                <FunctionIcon title="Insert Math" />
-            </button>
+
             <button type="button" @click="editor.chain().focus().setHorizontalRule().run()" class="p-1">
                 <HorizontalRuleIcon title="Horizontal Rule" />
             </button>

@@ -64,6 +64,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/attribute/delete/{id}', [AttributeController::class, 'destroy'])->name('admin.attribute.destroy');
     Route::put('/attributes/{attribute}/compare', [AttributeController::class, 'toggleCompare'])->name('admin.attributes.compare');
     Route::put('/attributes/{attribute}/filter', [AttributeController::class, 'toggleFilter'])->name('admin.attributes.filter');
+    Route::put('/attributes/{attribute}/toggle', [AttributeController::class, 'toggle'])->name('admin.attributes.toggle');
     Route::delete('/attributes/bulk-delete', [AttributeController::class, 'bulkDelete'])->name('admin.attributes.bulk-delete');
 
     // attribute group

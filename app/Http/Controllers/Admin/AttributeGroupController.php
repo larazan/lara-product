@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\AttributeGroup;
 use App\Models\Category;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\GroupResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
@@ -30,12 +31,12 @@ class AttributeGroupController extends Controller
             ->paginate($page)
             ->withQueryString();
 
-        $categories = Category::whereNull('parent_id')->get();
+        $categories = Category::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/AttributeGroup/Index', [
             'page' => $page,
             'categories' => $categories,
-            'groups' => $groups,
+            'groups' => GroupResource::collection($groups),
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
         ]);
@@ -49,8 +50,10 @@ class AttributeGroupController extends Controller
 
         $attribute_group = new AttributeGroup();
         $attribute_group->category_id = $request->categoryId;
-        $attribute_group->name = $request->name;
-        $attribute_group->label = $request->label;
+        // $attribute_group->name = $request->name;
+        $attribute_group->setTranslations('name', $request->name);
+        // $attribute_group->label = $request->label;
+        $attribute_group->setTranslations('label', $request->label);
         $attribute_group->order = $request->order;
         $attribute_group->icon = $request->icon;
         $attribute_group->score_weight = $request->scoreWeight;
@@ -70,8 +73,10 @@ class AttributeGroupController extends Controller
         $attribute_group = AttributeGroup::findOrFail($id);
 
         $attribute_group->category_id = $request->categoryId;
-        $attribute_group->name = $request->name;
-        $attribute_group->label = $request->label;
+        // $attribute_group->name = $request->name;
+        $attribute_group->setTranslations('name', $request->name);
+        // $attribute_group->label = $request->label;
+        $attribute_group->setTranslations('label', $request->label);
         $attribute_group->order = $request->order;
         $attribute_group->icon = $request->icon;
         $attribute_group->score_weight = $request->scoreWeight;

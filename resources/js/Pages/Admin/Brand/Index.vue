@@ -27,7 +27,7 @@ const resetForm = () => {
 }
 
 const formBrand = useForm({
-    name: {},
+    name: "",
     description: "",
     website: "",
     image: null,
@@ -338,7 +338,8 @@ const deleteSelected = () => {
                                             </div>
                                             <span v-else class="flex  items-center p-1">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                    stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                    stroke-width="1.5" stroke="currentColor"
+                                                    class="size-6 text-gray-500">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                                                 </svg>
@@ -346,7 +347,7 @@ const deleteSelected = () => {
                                         </div>
                                         <div class="font-semibold text-sm text-gray-800">
                                             <p>{{ brand.name }}</p>
-                                            <p>{{ brand.website }}</p>
+                                            <p class="text-xs text-gray-500">{{ brand.website }}</p>
                                         </div>
                                     </td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
@@ -357,7 +358,7 @@ const deleteSelected = () => {
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                         <ToggleSwitch v-model="brand.is_active" field="is_active"
-                                            :update-url="route('admin.brand.toggle', brand.id)" confirm
+                                            :update-url="route('admin.brands.toggle', brand.id)" confirm
                                             success-message="Brand active updated" />
 
                                     </td>
@@ -431,13 +432,6 @@ const deleteSelected = () => {
                                         placeholder="" required>
                                 </div>
                                 <div class="col-span-6 sm:col-span-3">
-                                    <label for="parent"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                        Description
-                                    </label>
-                                    <MyEditor v-model="formBrand.description" />
-                                </div>
-                                <div class="col-span-6 sm:col-span-3">
                                     <label for="website"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Website
@@ -446,6 +440,14 @@ const deleteSelected = () => {
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="" required>
                                 </div>
+                                <div class="col-span-6">
+                                    <label for="parent"
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Description
+                                    </label>
+                                    <MyEditor v-model="formBrand.description" />
+                                </div>
+
                                 <div class="col-span-6 sm:col-span-3">
                                     <ImageUploadMod v-model="formBrand.image" label="Image"
                                         :error="formBrand.errors?.image" :preview-url="formBrand.old_image_url" />
@@ -504,13 +506,6 @@ const deleteSelected = () => {
                                         placeholder="" required>
                                 </div>
                                 <div class="col-span-6 sm:col-span-3">
-                                    <label for="parent"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                        Description
-                                    </label>
-                                    <MyEditor v-model="formBrand.description" />
-                                </div>
-                                <div class="col-span-6 sm:col-span-3">
                                     <label for="website"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Website
@@ -519,6 +514,14 @@ const deleteSelected = () => {
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="" required>
                                 </div>
+                                <div class="col-span-6 ">
+                                    <label for="parent"
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Description
+                                    </label>
+                                    <MyEditor v-model="formBrand.description" />
+                                </div>
+
                                 <div class="col-span-6 sm:col-span-3">
                                     <ImageUploadMod v-model="formBrand.image" label="Image"
                                         :error="formBrand.errors?.image" :preview-url="formBrand.old_image_url" />

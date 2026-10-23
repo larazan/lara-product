@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Attribute;
 use App\Models\AttributeGroup;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AttributeResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -30,7 +31,7 @@ class AttributeController extends Controller
 
         return Inertia::render('Admin/Attribute/Index', [
             'page' => $page,
-            'attributes' => $attributes,
+            'attributes' => AttributeResource::collection($attributes),
             'groups' => $groups,
             'search' => $request->only('q'),
         ]);
@@ -38,7 +39,7 @@ class AttributeController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
         ]);
 
@@ -85,16 +86,16 @@ class AttributeController extends Controller
         return redirect()->back()->with('success', 'Attribute deleted successfully.');
     }
 
-    // public function toggle(Attribute $attribute, Request $request)
-    // {
-    //     $request->validate([
-    //         'is_active' => 'required|boolean',
-    //     ]);
+    public function toggle(Attribute $attribute, Request $request)
+    {
+        $request->validate([
+            'is_active' => 'required|boolean',
+        ]);
 
-    //     $attribute->update(['is_active' => $request->is_active]);
+        $attribute->update(['is_active' => $request->is_active]);
 
-    //     return back()->with('success', 'Category status updated successfully!');
-    // }
+        return back()->with('success', 'Attribute status updated successfully!');
+    }
 
     public function toggleFilter(Attribute $attribute, Request $request)
     {

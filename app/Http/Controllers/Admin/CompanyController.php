@@ -30,7 +30,7 @@ class CompanyController extends Controller
             ->paginate($page)
             ->withQueryString();
 
-        $countries = Country::orderBy('name', 'desc')->get();
+        $countries = Country::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/Company/Index', [
             'page' => $page,

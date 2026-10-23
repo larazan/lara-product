@@ -24,6 +24,8 @@ class Attribute extends Model
         'description',
         'unit',
         'type',
+        'options',
+        'validation_rules',
         'is_filterable',
         'is_comparable',
         'sort_order',
@@ -33,11 +35,15 @@ class Attribute extends Model
 
     protected $casts = [
         'name'      => 'array',   // JSON multilingual
-        'label'      => 'array',   // JSON multilingual
+        'label'      => 'array',
+        'options' => 'array',
+        'validation_rules' => 'array',
         'is_filterable' => 'boolean',
         'is_comparable' => 'boolean',
+        'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
+
 
     /*
     |--------------------------------------------------------------------------

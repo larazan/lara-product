@@ -41,9 +41,9 @@ class HandleInertiaRequests extends Middleware
                     ? $request->user()->only('username', 'name', 'role', 'email', 'bio', 'image')
                     : null,
                 // Mengambil 10 notifikasi belum dibaca milik user
-                'unreadNotifications' => $request->user()
-                    ? $request->user()->unreadNotifications()->take(10)->get()
-                    : [],
+                // 'unreadNotifications' => $request->user()
+                //     ? $request->user()->unreadNotifications()->take(10)->get()
+                //     : [],
             ],
             'locale' => app()->getLocale(),
             'flash' => [

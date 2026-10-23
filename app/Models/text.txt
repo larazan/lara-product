@@ -1,3 +1,9 @@
+superadmin@gmail.net 
+admin@gmail.com
+password
+
+
+
 Brand 
 Company
 Country
@@ -29,3 +35,33 @@ ProductFaq
 ProductInstruction
 ProductNutrition
 ProductSafetyInstruction
+
+
+Dashboard Admin
+Categories
+Attributes
+Attribute Group
+Category Attribute
+
+Brands
+Companies
+Products
+
+Articles
+Category Article
+
+Faqs
+Settings
+
+User
+
+Advertisings
+
+Report
+
+Contacts
+
+Frontend
+
+
+Dashboard User

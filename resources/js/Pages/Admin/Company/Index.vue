@@ -28,7 +28,7 @@ const resetForm = () => {
 }
 
 const formCompany = useForm({
-    name: {},
+    name: "",
     countryId: "",
     legalName: "",
     description: "",
@@ -349,7 +349,8 @@ const deleteSelected = () => {
                                             </div>
                                             <span v-else class="flex  items-center p-1">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                    stroke-width="1.5" stroke="currentColor" class="size-6">
+                                                    stroke-width="1.5" stroke="currentColor"
+                                                    class="size-6 text-gray-500">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                                                 </svg>
@@ -357,8 +358,8 @@ const deleteSelected = () => {
                                         </div>
                                         <div class="font-semibold text-sm text-gray-800">
                                             <p>{{ company.name }}</p>
-                                            <p>{{ company.website }}</p>
-                                            <p>{{ company.email }}</p>
+                                            <p class="text-xs text-gray-500">{{ company.website }}</p>
+                                            <p class="text-xs text-gray-500">{{ company.email }}</p>
                                         </div>
                                     </td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
@@ -371,7 +372,7 @@ const deleteSelected = () => {
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                         <ToggleSwitch v-model="company.is_active" field="is_active"
-                                            :update-url="route('admin.company.toggle', company.id)" confirm
+                                            :update-url="route('admin.companies.toggle', company.id)" confirm
                                             success-message="Company active updated" />
 
                                     </td>
@@ -457,7 +458,7 @@ const deleteSelected = () => {
                                             option.name }}</option>
                                     </select>
                                 </div>
-                                <div class="col-span-6 sm:col-span-3">
+                                <div class="col-span-6">
                                     <label for="description"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Description
@@ -478,7 +479,7 @@ const deleteSelected = () => {
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Email
                                     </label>
-                                    <input type="text" v-model="formCompany.email" id="email"
+                                    <input type="email" v-model="formCompany.email" id="email"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="">
                                 </div>
@@ -550,7 +551,7 @@ const deleteSelected = () => {
                                             option.name }}</option>
                                     </select>
                                 </div>
-                                <div class="col-span-6 sm:col-span-3">
+                                <div class="col-span-6 ">
                                     <label for="description"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Description
@@ -571,7 +572,7 @@ const deleteSelected = () => {
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Email
                                     </label>
-                                    <input type="text" v-model="formCompany.email" id="email"
+                                    <input type="email" v-model="formCompany.email" id="email"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="">
                                 </div>

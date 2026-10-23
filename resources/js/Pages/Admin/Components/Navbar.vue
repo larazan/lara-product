@@ -36,7 +36,7 @@ onMounted(() => {
                 clip-rule="evenodd"></path>
             </svg>
           </button>
-          <Link :href="route('home')" class="flex ml-2 md:mr-24">
+          <Link :href="route('dashboard')" class="flex ml-2 md:mr-24">
             <img src="/frontend/images/logo.svg" class="h-8 mr-3" alt="FlowBite Logo" />
             <span
               class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Flowbite</span>
@@ -347,8 +347,8 @@ onMounted(() => {
                 <span class="sr-only">Open user menu</span>
                 <div class="w-10 h-10 ">
                   <img v-if="user.image" :src="`/storage/${user.image}`" class="w-10 h-10 rounded-full" />
-                    <img v-else :src="`https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`"
-                                    class="w-10 h-10 rounded-full" />
+                  <img v-else :src="`https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`"
+                    class="w-10 h-10 rounded-full" />
                 </div>
               </button>
             </div>
@@ -358,22 +358,22 @@ onMounted(() => {
               id="dropdown-2">
               <div class="px-4 py-3" role="none">
                 <p class="text-sm text-gray-900 dark:text-white" role="none">
-                  <span>{{ user.first_name }} {{ user.last_name }}</span>
+                  <span>{{ user.name }}</span>
                 </p>
                 <p class="text-sm font-medium text-gray-900 truncate dark:text-gray-300" role="none">
                   @{{ user.username }}
                 </p>
               </div>
               <ul class="py-1" role="none">
+                <!-- <li>
+                  <Link :href="route('profile', user.username)"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
+                    role="menuitem">Profile</Link>
+                </li> -->
                 <li>
-                    <Link :href="route('profile', user.username)"
-                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                        role="menuitem">Profile</Link>
-                </li>
-                <li>
-                    <Link :href="route('setting.edit')"
-                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                        role="menuitem">Settings</Link>
+                  <Link :href="route('dashboard')"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
+                    role="menuitem">Settings</Link>
                 </li>
                 <li>
                   <a href="#"
@@ -382,10 +382,10 @@ onMounted(() => {
                 </li>
                 <li>
                   <Link :href="route('logout')" method="post" as="button"
-                                        class="w-full text-left block cursor-pointer px-4 py-2 text-sm font-bold border-t text-red-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
-                                        role="menuitem">
-                                    Sign out
-                                    </Link>
+                    class="w-full text-left block cursor-pointer px-4 py-2 text-sm font-bold border-t text-red-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
+                    role="menuitem">
+                    Sign out
+                  </Link>
                 </li>
               </ul>
             </div>

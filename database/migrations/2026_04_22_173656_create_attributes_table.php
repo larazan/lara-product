@@ -13,25 +13,7 @@ return new class extends Migration
     {
         Schema::create('attributes', function (Blueprint $table) {
             $table->id();
-            // $table->foreignId('group_id')
-            //     ->nullable()
-            //     ->constrained('attribute_groups')
-            //     ->nullOnDelete();
-            // $table->json('name');
-            // $table->json('label');
-            // $table->longText('icon_svg')->nullable();
-            // $table->text('description')->nullable();
-            // $table->string('unit')->nullable(); // "g", "mm", etc.
-            // $table->enum('type', ['text', 'number', 'boolean', 'select'])->default('text');
-            // $table->boolean('is_filterable')->default(false);
-            // $table->boolean('is_comparable')->default(true);
 
-            // $table->unsignedInteger('sort_order')->default(0);
-            // $table->timestamps();
-
-            // $table->unique('name');
-
-            // 
             // Relasi ke grup atribut, boleh kosong jika atribut tidak masuk grup
             $table->foreignId('group_id')
                 ->nullable()
@@ -57,9 +39,14 @@ return new class extends Migration
             // Tipe data nilai atribut
             $table->enum('type', [
                 'text',
+                'textarea',
                 'number',
+                'decimal',
                 'boolean',
                 'select',
+                'multiselect',
+                'date',
+                'url',
             ])->default('text');
 
             // Pengaturan tampilan dan pencarian

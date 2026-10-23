@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('countries', function (Blueprint $table) {
             $table->id();
             $table->string('code', 5);
-            $table->string('name', 30);
+            $table->string('name');
             $table->string('icon', 5);
             $table->boolean('rtl')->default(false);
             $table->boolean('is_active')->default(true);

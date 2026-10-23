@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Category;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CategoryResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
@@ -19,21 +20,20 @@ class CategoryController extends Controller
     {
         $page = 10;
         $sort = 'asc';
-        $categories = Category::when($request->q, function($query, $q){
-            $query->where('name', 'like', '%'.$q.'%');
-        })
-        // ->when(request('sort'), function ($q) {
-        //     $direction = request('direction', 'asc');
-        //     $q->orderBy(request('sort'), $direction);
-        // })
-         ->paginate($page)
-        ->withQueryString();
+        $categories = Category::query()
+            ->with('parent')
+            ->when($request->q, function ($query, $q) {
+                $query->where('name', 'like', '%' . $q . '%');
+            })
+            ->paginate($page)
+            ->withQueryString();
 
-        $catParent = Category::whereNull('parent_id')->get();
+        $catParent = Category::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/Category/Index', [
-           'page' => $page,
-            'categories' => $categories,
+            'page' => $page,
+            // 'categories' => $categories,
+            'categories' => CategoryResource::collection($categories),
             'parentOption' => $catParent,
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
@@ -44,11 +44,13 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|array',
+            'parent_id' => 'nullable|exists:categories,id'
         ]);
 
         $category = new Category();
-        $category->name = $request->name;
-        $category->parent_id = $request->parentId;
+        $category->setTranslations('name', $request->name);
+        // $category->name = $request->name;
+        $category->parent_id = $request->parentId ?? null;
 
         // upload image
         if ($request->hasFile('image')) {
@@ -88,12 +90,13 @@ class CategoryController extends Controller
         //
         $request->validate([
             'name' => 'required|array',
+            'parent_id' => 'nullable|exists:categories,id'
         ]);
 
         $category = Category::findOrFail($id);
-
-        $category->name = $request->name;
-        $category->parent_id = $request->parentId;
+        $category->setTranslations('name', $request->name);
+        // $category->name = $request->name;
+        $category->parent_id = $request->parentId ?? null;
 
         // upload image
         if ($request->hasFile('image')) {
@@ -104,7 +107,7 @@ class CategoryController extends Controller
             $uniqueName = time() . '-' . Str::random(10) . '.' . $image->getClientOriginalExtension();
             // $image->move('image', $uniqueName);
 
-             // WebP
+            // WebP
             // Initialize Intervention Image Manager with the desired driver
             // GD is usually a safe bet, ensure it's installed on your server
             $manager = new ImageManager(new Driver());
@@ -130,15 +133,16 @@ class CategoryController extends Controller
         return redirect()->route('admin.category.index')->with('success', 'Category updated successfully.');
     }
 
-    public function deleteImage($id = null) {
+    public function deleteImage($id = null)
+    {
         $image = Category::findOrFail($id);
-		$path = 'storage/';
+        $path = 'storage/';
 
         // ORIGINAL 
-        if ($image->image || File::exists(public_path($path.$image->image))) {
-            File::delete(public_path($path.$image->image));
-		}
-             
+        if ($image->image || File::exists(public_path($path . $image->image))) {
+            File::delete(public_path($path . $image->image));
+        }
+
         return true;
     }
 
@@ -149,7 +153,7 @@ class CategoryController extends Controller
         $category->delete();
         return redirect()->back()->with('success', 'Category deleted successfully.');
     }
-    
+
     public function toggle(Category $category, Request $request)
     {
         $request->validate([
