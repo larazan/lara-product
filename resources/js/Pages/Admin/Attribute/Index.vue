@@ -24,14 +24,9 @@ const props = defineProps({
 
 const page = usePage()
 
-const resetForm = () => {
-    // formAttribute.name = null;
-    // formAttribute.groupId = "";
-    // formAttribute.label = null;
-    // formAttribute.icon = null;
-    formAttribute.reset()
-    formAttribute.clearErrors()
-}
+// ---------------------------------------------------------
+// LOCALES
+// ---------------------------------------------------------
 
 const locales = computed(() => {
     return props.locales?.length
@@ -43,33 +38,56 @@ const currentLocale = ref(
     page.props.locale || locales.value[0] || 'en'
 )
 
+const emptyTranslations = () =>
+    Object.fromEntries(locales.value.map(locale => [locale, '']))
+
 const createEmptyNames = () => {
     return Object.fromEntries(
         locales.value.map(locale => [locale, ''])
     )
 }
 
-const emptyTranslations = () =>
-    Object.fromEntries(locales.value.map(locale => [locale, '']))
-
+// ---------------------------------------------------------
+// INITIAL FORM DATA
+// ---------------------------------------------------------
 
 const formAttribute = useForm({
-    groupId: null,
+    group_id: null,
     name: createEmptyNames(),
     label: emptyTranslations(),
     description: "",
     unit: "",
     type: 'text',
     options: [],
-    validationRules: {
+    validation_rules: {
         min: null,
         max: null,
     },
     is_filterable: false,
     is_comparable: true,
     is_active: true,
-    iconSvg: "",
+    icon_svg: "",
 });
+
+// ---------------------------------------------------------
+// RESET FORM
+// ---------------------------------------------------------
+
+const resetForm = () => {
+    // formAttribute.name = null;
+    // formAttribute.group_id = "";
+    // formAttribute.label = null;
+    // formAttribute.icon = null;
+    formAttribute.reset()
+    formAttribute.clearErrors()
+
+    currentLocale.value =
+        page.props.locale || locales.value[0] || 'en'
+}
+
+// ---------------------------------------------------------
+// SELECT OPTIONS
+// ---------------------------------------------------------
 
 const addOption = () => {
     formAttribute.options.push({
@@ -83,6 +101,10 @@ const removeOption = (index) => {
         formAttribute.options.splice(index, 1)
     }
 }
+
+// ---------------------------------------------------------
+// GROUP NAME
+// ---------------------------------------------------------
 
 const groupName = (group) => {
     if (!group) return ''
@@ -105,12 +127,25 @@ const groupName = (group) => {
         ?? ''
 }
 
+// ---------------------------------------------------------
+// TRANSLATION ERRORS
+// ---------------------------------------------------------
 
 const currentNameError = computed(() => {
     return formAttribute.errors[`name.${currentLocale.value}`]
         || formAttribute.errors.name
         || ''
 })
+
+const currentLabelError = computed(() => {
+    return formAttribute.errors[`label.${currentLocale.value}`]
+        || formAttribute.errors.label
+        || ''
+})
+
+// ---------------------------------------------------------
+// MODAL STATES
+// ---------------------------------------------------------
 
 const idAttribute = ref('');
 const idDeleteAttribute = ref('');
@@ -124,30 +159,86 @@ const closeModal = () => {
     if (showCreateModal.value) showCreateModal.value = false;
     if (showDeleteModal.value) showDeleteModal.value = false;
 
+    idAttribute.value = null
+    idDeleteAttribute.value = null
+
+    resetForm()
+
     currentLocale.value = page.props.locale || props.locales[0] || 'en'
 }
 
-// open edit modal
+// ---------------------------------------------------------
+// OPEN EDIT MODAL
+// ---------------------------------------------------------
+
 const openEditModal = (attribute) => {
-    showEditModal.value = true;
-    idAttribute.value = attribute.id;
+    idAttribute.value = attribute.id
 
-    // formAttribute.name = attribute.name;
-    formAttribute.name = {
-        ...createEmptyNames(),
-        ...(attribute.name ?? {}),
+    const payload = {
+        group_id: attribute.group_id ?? null,
+        slug: attribute.slug ?? '',
+
+        name: Object.fromEntries(
+            locales.value.map(locale => [
+                locale,
+                attribute.name?.[locale] ?? '',
+            ])
+        ),
+
+        label: Object.fromEntries(
+            locales.value.map(locale => [
+                locale,
+                attribute.label?.[locale] ?? '',
+            ])
+        ),
+
+        icon_svg: attribute.icon_svg ?? '',
+        description: attribute.description ?? '',
+        unit: attribute.unit ?? '',
+        type: attribute.type ?? 'text',
+
+        options: Array.isArray(attribute.options)
+            ? attribute.options.map(option => ({
+                value: option.value ?? '',
+                label: Object.fromEntries(
+                    locales.value.map(locale => [
+                        locale,
+                        option.label?.[locale] ?? '',
+                    ])
+                ),
+            }))
+            : [],
+
+        validation_rules: {
+            min: attribute.validation_rules?.min ?? null,
+            max: attribute.validation_rules?.max ?? null,
+        },
+
+        is_filterable: Boolean(attribute.is_filterable),
+        is_comparable: attribute.is_comparable ?? true,
+        is_active: attribute.is_active ?? true,
+        sort_order: attribute.sort_order ?? 0,
     }
-    formAttribute.label = attribute.label;
-    formAttribute.groupId = attribute.group_id;
-    formAttribute.type = attribute.type;
-    formAttribute.unit = attribute.unit;
-    formAttribute.iconSvg = attribute.icon_svg
 
-    currentLocale.value = page.props.locale || locales.value[0] || 'en'
+    // Set the selected attribute as the new form defaults.
+    formAttribute.defaults(payload)
+    formAttribute.reset()
+    formAttribute.clearErrors()
+
+    currentLocale.value =
+        page.props.locale || locales.value[0] || 'en'
+
+    showCreateModal.value = false
+    showEditModal.value = true
 }
 
-// update method
+// ---------------------------------------------------------
+// UPDATE ATTRIBUTE
+// ---------------------------------------------------------
+
 const updateAttribute = () => {
+    if (!idAttribute.value) return
+
     formAttribute
         .transform(data => ({
             ...data,
@@ -171,15 +262,20 @@ const updateAttribute = () => {
 }
 
 
+// ---------------------------------------------------------
+// OPEN CREATE MODAL
+// ---------------------------------------------------------
 
-// open add modal
 const openAddModal = () => {
     resetForm();
 
     showCreateModal.value = true;
 }
 
-// add method
+// ---------------------------------------------------------
+// CREATE ATTRIBUTE
+// ---------------------------------------------------------
+
 const addAttribute = () => {
     formAttribute.post('/admin/attribute/create', {
         forceFormData: true,
@@ -197,43 +293,57 @@ const addAttribute = () => {
     })
 }
 
+// ---------------------------------------------------------
+// OPEN DELETE MODAL
+// ---------------------------------------------------------
 
-// open delete modal
 const openDeleteModal = (id) => {
-    showDeleteModal.value = true;
     idDeleteAttribute.value = id;
+    showDeleteModal.value = true;
 }
 
-// delete method
-const deleteAttribute = async () => {
-    try {
-        await router.delete('/admin/attribute/delete/' + idDeleteAttribute.value, {
-            onSuccess: page => {
-                Swal.fire({
-                    toast: true,
-                    icon: 'success',
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    title: page.props.flash.success
-                })
-                closeModal();
-            },
-        });
-    } catch (error) {
-        console.log(error);
+// ---------------------------------------------------------
+// DELETE ATTRIBUTE
+// ---------------------------------------------------------
 
-    }
+const deleteAttribute = () => {
+    if (!idDeleteAttribute.value) return
+
+    router.delete('/admin/attribute/delete/' + idDeleteAttribute.value, {
+        preserveScroll: true,
+
+        onSuccess: page => {
+            Swal.fire({
+                toast: true,
+                icon: 'success',
+                position: 'top-end',
+                showConfirmButton: false,
+                title: page.props.flash.success
+            })
+            closeModal();
+        },
+    });
 }
 
-// search
-const search = ref(props.search ?? '');
+// ---------------------------------------------------------
+// SEARCH
+// ---------------------------------------------------------
+
+// const search = ref(props.search ?? '');
+const search = ref(
+    typeof props.search === 'string'
+        ? props.search
+        : props.search?.q ?? ''
+)
 
 watch(search, (value) => {
-    router.get('/admin/attributes', { q: value }, { preserveState: true, replace: true })
+    router.get('/admin/attributes', { q: value }, { preserveState: true, preserveScroll: true, replace: true })
 });
 
+// ---------------------------------------------------------
+// SELECT ALL
+// ---------------------------------------------------------
 
-// delete selected
 const selected = ref([])
 
 // Select all logic
@@ -246,7 +356,6 @@ const allSelected = computed(() => {
     )
 })
 
-
 const toggleAll = (e) => {
     if (!props.attributes?.data) return
 
@@ -255,7 +364,10 @@ const toggleAll = (e) => {
         : []
 }
 
-// Delete selected
+// ---------------------------------------------------------
+// BULK DELETE
+// ---------------------------------------------------------
+
 const deleteSelected = () => {
     if (!selected.value.length) return
 
@@ -518,144 +630,19 @@ const deleteSelected = () => {
 
         <PaginationMod :meta="props.attributes.meta" :query="{ search: search }" :limit="props.page" />
 
+
         <!-- Edit Attribute Modal -->
-        <Modal :show="showEditModal" maxWidth="xl">
-            <div class="">
-                <!-- Modal content -->
-                <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
-                    <!-- Modal header -->
-                    <div class="flex items-start justify-between p-5 border-b rounded-t dark:border-gray-700">
-                        <h3 class="text-xl font-semibold dark:text-white">
-                            Edit attribute
-                        </h3>
-                        <button @click="closeModal()" type="button"
-                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white">
-                            <svg class="w-5 h-5" fill="currentColor" view-box="0 0 20 20"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd"
-                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <!-- Modal body -->
-                    <form @submit.prevent="updateAttribute">
-                        <div class="p-6 space-y-6">
-                            <div class="grid grid-cols-6 gap-6">
-                                <!-- Locale -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Locale
-                                    </label>
-
-                                    <select v-model="currentLocale"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                        <option v-for="locale in locales" :key="locale" :value="locale">
-                                            {{ locale.toUpperCase() }}
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <!-- Attribute Name -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="name"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Name ({{ currentLocale.toUpperCase() }})
-                                    </label>
-
-                                    <input id="name" v-model="formAttribute.name[currentLocale]" type="text" required
-                                        :placeholder="`Enter group name in ${currentLocale.toUpperCase()}`" :class="{
-                                            'border-red-500 focus:border-red-500 focus:ring-red-500':
-                                                currentNameError
-                                        }"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
-
-                                    <p v-if="currentNameError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ currentNameError }}
-                                    </p>
-
-                                    <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Enter the group name for this language.
-                                    </p>
-                                </div>
-
-                                <!-- Attribute Label -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="label"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Label ({{ currentLocale.toUpperCase() }})
-                                    </label>
-                                    <input id="label" v-model="formAttribute.label[currentLocale]" type="text" required
-                                        :placeholder="`Enter attribute label in ${currentLocale.toUpperCase()}`"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
-                                </div>
-
-                                <!-- Category -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="group-parent"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Category
-                                    </label>
-
-                                    <select id="group" v-model="formAttribute.groupId"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                        <option :value="null">
-                                            No Parent (Root Category)
-                                        </option>
-
-                                        <option v-for="option in props.categories" :key="option.id" :value="option.id">
-                                            {{ groupName(option) }}
-                                        </option>
-                                    </select>
-
-                                    <p v-if="formAttribute.errors.groupId" class="mt-1 text-sm text-red-600">
-                                        {{ formAttribute.errors.groupId }}
-                                    </p>
-                                </div>
-
-                                <!-- Icon -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="icon"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                        Icon
-                                    </label>
-                                    <input type="text" v-model="formAttribute.icon" id="icon"
-                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        placeholder="">
-                                </div>
-
-                            </div>
-                        </div>
-                        <!-- Modal footer -->
-                        <div
-                            class="flex gap-2 items-center p-6 border-t border-gray-200 rounded-b dark:border-gray-700">
-                            <button
-                                class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-                                type="submit">Update</button>
-                            <button @click="closeModal"
-                                class=" justify-center text-gray-500 items-center bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
-                                type="button">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </Modal>
-
-
-
-
-        <!-- Add Attribute Modal -->
-        <Modal :show="showCreateModal" maxWidth="2xl">
+        <Modal :show="showEditModal" maxWidth="2xl">
             <div class="relative rounded-lg bg-white shadow dark:bg-gray-800">
 
                 <!-- Header -->
                 <div class="flex items-start justify-between border-b p-5 dark:border-gray-700">
                     <div>
                         <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                            Add New Attribute
+                            Edit Attribute
                         </h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Configure the specification field for your products.
+                            Update the specification field configuration.
                         </p>
                     </div>
 
@@ -663,13 +650,13 @@ const deleteSelected = () => {
                         class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white">
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd"
-                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414-1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
                                 clip-rule="evenodd" />
                         </svg>
                     </button>
                 </div>
 
-                <form @submit.prevent="addAttribute">
+                <form @submit.prevent="updateAttribute">
                     <div class="max-h-[70vh] space-y-6 overflow-y-auto p-6">
 
                         <!-- General Information -->
@@ -678,7 +665,7 @@ const deleteSelected = () => {
                                 General Information
                             </h4>
 
-                            <div class="grid grid-cols-6 gap-5">
+                            <div class="grid grid-cols-6 gap-5 ">
 
                                 <!-- Locale -->
                                 <div class="col-span-6 sm:col-span-3">
@@ -701,7 +688,7 @@ const deleteSelected = () => {
                                         Group
                                     </label>
 
-                                    <select id="group" v-model="formAttribute.groupId"
+                                    <select id="group" v-model="formAttribute.group_id"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                         <option :value="null">
                                             No Parent (Root Category)
@@ -712,8 +699,8 @@ const deleteSelected = () => {
                                         </option>
                                     </select>
 
-                                    <p v-if="formAttribute.errors.groupId" class="mt-1 text-sm text-red-600">
-                                        {{ formAttribute.errors.groupId }}
+                                    <p v-if="formAttribute.errors.group_id" class="mt-1 text-sm text-red-600">
+                                        {{ formAttribute.errors.group_id }}
                                     </p>
                                 </div>
 
@@ -807,7 +794,340 @@ const deleteSelected = () => {
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         SVG Icon (optional)
                                     </label>
-                                    <input type="text" v-model="formAttribute.iconSvg" id="icon"
+                                    <input type="text" v-model="formAttribute.icon_svg" id="icon"
+                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                        placeholder="<svg ...>...</svg>">
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        Sanitize SVG markup before rendering it as HTML.
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Select Options -->
+                        <section v-if="['select', 'multiselect'].includes(formAttribute.type)"
+                            class="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 dark:text-white">
+                                        Select Options
+                                    </h4>
+                                    <p class="text-sm text-gray-500">
+                                        Manage the choices available in product specifications.
+                                    </p>
+                                </div>
+
+                                <button type="button" @click="addOption"
+                                    class="rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800">
+                                    + Add Option
+                                </button>
+                            </div>
+
+                            <div v-for="(option, index) in formAttribute.options" :key="index"
+                                class="grid grid-cols-1 items-start w-full gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700/40 sm:grid-cols-12">
+                                <div class="col-span-4 ">
+                                    <label for="form-label"
+                                        class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
+                                        Value
+                                    </label>
+                                    <input v-model="option.value" type="text" required placeholder="e.g. amoled"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                                </div>
+
+                                <div class="col-span-5 ">
+                                    <label for="form-label"
+                                        class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
+                                        Label ({{ currentLocale.toUpperCase() }})
+                                    </label>
+                                    <input v-model="option.label[currentLocale]" type="text" required
+                                        :placeholder="`Label in ${currentLocale.toUpperCase()}`"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                                </div>
+
+                                <div class="col-span-2">
+                                    <label for="form-label"
+                                        class="block mb-4 text-xs font-medium text-gray-900 dark:text-white">
+
+                                    </label>
+                                    <button type="button" @click="removeOption(index)"
+                                        class="w-full mt-2 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:border-red-900"
+                                        :disabled="formAttribute.options.length <= 1"
+                                        :class="{ 'cursor-not-allowed opacity-40': formAttribute.options.length <= 1 }">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p v-if="formAttribute.errors.options" class="form-error">
+                                {{ formAttribute.errors.options }}
+                            </p>
+                        </section>
+
+                        <!-- Numeric Validation -->
+                        <section v-if="['number', 'decimal'].includes(formAttribute.type)"
+                            class="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                            <h4 class="font-semibold text-gray-900 dark:text-white">
+                                Numeric Validation
+                            </h4>
+
+                            <div
+                                class="grid grid-cols-1 gap-4 items-start w-full rounded-lg bg-gray-50 p-3 dark:bg-gray-700/40 sm:grid-cols-12">
+                                <div class="col-span-4 ">
+                                    <label for="edit_min_value"
+                                        class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
+                                        Minimum Value
+                                    </label>
+
+                                    <input id="edit_min_value" v-model="formAttribute.validation_rules.min"
+                                        type="number" step="any"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        placeholder="Optional" />
+                                </div>
+
+                                <div class="col-span-4 ">
+                                    <label for="edit_max_value"
+                                        class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
+                                        Maximum Value
+                                    </label>
+
+                                    <input id="edit_max_value" v-model="formAttribute.validation_rules.max"
+                                        type="number" step="any"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        placeholder="Optional" />
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Attribute Settings -->
+                        <section class="space-y-4">
+                            <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                                Attribute Settings
+                            </h4>
+
+                            <label class="flex items-start gap-3">
+                                <input v-model="formAttribute.is_filterable" type="checkbox"
+                                    class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                                <span>
+                                    <span class="block text-sm font-medium text-gray-900 dark:text-white">
+                                        Filterable
+                                    </span>
+                                    <span class="text-sm text-gray-500">
+                                        Allow filtering products by this attribute.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="flex items-start gap-3">
+                                <input v-model="formAttribute.is_comparable" type="checkbox"
+                                    class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                                <span>
+                                    <span class="block text-sm font-medium text-gray-900 dark:text-white">
+                                        Comparable
+                                    </span>
+                                    <span class="text-sm text-gray-500">
+                                        Include this attribute in product comparisons.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="flex items-start gap-3">
+                                <input v-model="formAttribute.is_active" type="checkbox"
+                                    class="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                                <span>
+                                    <span class="block text-sm font-medium text-gray-900 dark:text-white">
+                                        Active
+                                    </span>
+                                    <span class="text-sm text-gray-500">
+                                        Allow this attribute to be used in product forms.
+                                    </span>
+                                </span>
+                            </label>
+                        </section>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="flex justify-end gap-3 border-t p-5 dark:border-gray-700">
+                        <button type="button" @click="closeModal"
+                            class="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                            Cancel
+                        </button>
+
+                        <button type="submit" :disabled="formAttribute.processing"
+                            class="rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50">
+                            {{ formAttribute.processing ? 'Updating...' : 'Update Attribute' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+
+
+
+        <!-- Add Attribute Modal -->
+        <Modal :show="showCreateModal" maxWidth="2xl">
+            <div class="relative rounded-lg bg-white shadow dark:bg-gray-800">
+
+                <!-- Header -->
+                <div class="flex items-start justify-between border-b p-5 dark:border-gray-700">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                            Add New Attribute
+                        </h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Configure the specification field for your products.
+                        </p>
+                    </div>
+
+                    <button type="button" @click="closeModal" aria-label="Close modal"
+                        class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form @submit.prevent="addAttribute">
+                    <div class="max-h-[70vh] space-y-6 overflow-y-auto p-6">
+
+                        <!-- General Information -->
+                        <section class="space-y-4">
+                            <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                                General Information
+                            </h4>
+
+                            <div class="grid grid-cols-6 gap-5">
+
+                                <!-- Locale -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                        Locale
+                                    </label>
+
+                                    <select v-model="currentLocale"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                        <option v-for="locale in locales" :key="locale" :value="locale">
+                                            {{ locale.toUpperCase() }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <!-- Group -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="group"
+                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                        Group
+                                    </label>
+
+                                    <select id="group" v-model="formAttribute.group_id"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                        <option :value="null">
+                                            No Parent (Root Category)
+                                        </option>
+
+                                        <option v-for="option in props.groups" :key="option.id" :value="option.id">
+                                            {{ groupName(option) }}
+                                        </option>
+                                    </select>
+
+                                    <p v-if="formAttribute.errors.group_id" class="mt-1 text-sm text-red-600">
+                                        {{ formAttribute.errors.group_id }}
+                                    </p>
+                                </div>
+
+                                <!-- Name -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="name"
+                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                        Name ({{ currentLocale.toUpperCase() }})
+                                    </label>
+
+                                    <input id="name" v-model="formAttribute.name[currentLocale]" type="text" required
+                                        :placeholder="`Enter attribute name in ${currentLocale.toUpperCase()}`" :class="{
+                                            'border-red-500 focus:border-red-500 focus:ring-red-500':
+                                                currentNameError
+                                        }"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+
+                                    <p v-if="currentNameError" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        {{ currentNameError }}
+                                    </p>
+
+                                    <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Enter the attribute name for this language.
+                                    </p>
+                                </div>
+
+                                <!-- Label -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="label"
+                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                        Label ({{ currentLocale.toUpperCase() }})
+                                    </label>
+                                    <input id="label" v-model="formAttribute.label[currentLocale]" type="text" required
+                                        :placeholder="`Enter attribute label in ${currentLocale.toUpperCase()}`"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+                                    <p v-if="formAttribute.errors[`label.${currentLocale}`]" class="form-error">
+                                        {{ formAttribute.errors[`label.${currentLocale}`] }}
+                                    </p>
+                                </div>
+
+
+                                <!-- Type -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="type"
+                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                        Type
+                                    </label>
+                                    <select id="type" v-model="formAttribute.type"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                        <option value="text">Text</option>
+                                        <option value="textarea">Textarea</option>
+                                        <option value="number">Integer Number</option>
+                                        <option value="decimal">Decimal Number</option>
+                                        <option value="boolean">Yes / No</option>
+                                        <option value="select">Select (Single Choice)</option>
+                                        <option value="multiselect">Select (Multiple Choices)</option>
+                                        <option value="date">Date</option>
+                                        <option value="url">URL</option>
+                                    </select>
+                                    <p v-if="formAttribute.errors.type" class="form-error">
+                                        {{ formAttribute.errors.type }}
+                                    </p>
+                                </div>
+
+                                <!-- Unit -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="unit"
+                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                        Unit
+                                    </label>
+                                    <input id="unit" v-model="formAttribute.unit" type="text" maxlength="30"
+                                        placeholder="e.g. GB, mm, inch, mAh"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                                    <p v-if="formAttribute.errors.unit" class="form-error">
+                                        {{ formAttribute.errors.unit }}
+                                    </p>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="col-span-6 ">
+                                    <label for="description"
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        Description
+                                    </label>
+                                    <MyEditor v-model="formAttribute.description" />
+                                </div>
+
+                                <!-- SVG -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="icon"
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        SVG Icon (optional)
+                                    </label>
+                                    <input type="text" v-model="formAttribute.icon_svg" id="icon"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="<svg ...>...</svg>">
                                     <p class="mt-1 text-xs text-gray-500">
@@ -883,17 +1203,30 @@ const deleteSelected = () => {
                                 Numeric Validation
                             </h4>
 
-                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label for="min_value" class="form-label">Minimum Value</label>
-                                    <input id="min_value" v-model="formAttribute.validation_rules.min" type="number"
-                                        step="any" class="form-input" placeholder="Optional" />
+                            <div
+                                class="grid grid-cols-1 gap-4 items-start w-full rounded-lg bg-gray-50 p-3 dark:bg-gray-700/40 sm:grid-cols-12">
+                                <div class="col-span-4 ">
+                                    <label for="edit_min_value"
+                                        class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
+                                        Minimum Value
+                                    </label>
+
+                                    <input id="edit_min_value" v-model="formAttribute.validation_rules.min"
+                                        type="number" step="any"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        placeholder="Optional" />
                                 </div>
 
-                                <div>
-                                    <label for="max_value" class="form-label">Maximum Value</label>
-                                    <input id="max_value" v-model="formAttribute.validation_rules.max" type="number"
-                                        step="any" class="form-input" placeholder="Optional" />
+                                <div class="col-span-4 ">
+                                    <label for="edit_max_value"
+                                        class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
+                                        Maximum Value
+                                    </label>
+
+                                    <input id="edit_max_value" v-model="formAttribute.validation_rules.max"
+                                        type="number" step="any"
+                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        placeholder="Optional" />
                                 </div>
                             </div>
                         </section>

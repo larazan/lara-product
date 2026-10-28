@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\AttributeResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AttributeController extends Controller
 {
@@ -39,13 +41,90 @@ class AttributeController extends Controller
 
     public function store(Request $request)
     {
+        $data = $request->validate([
+            'group_id' => ['nullable', 'exists:attribute_groups,id'],
+
+            'name' => ['required', 'array'],
+            'name.*' => ['nullable', 'string', 'max:255'],
+
+            'label' => ['nullable', 'array'],
+            'label.*' => ['nullable', 'string', 'max:255'],
+
+            'description' => ['nullable', 'string'],
+            'icon_svg' => ['nullable', 'string'],
+            'unit' => ['nullable', 'string', 'max:50'],
+
+            'type' => [
+                'required',
+                Rule::in([
+                    'text',
+                    'textarea',
+                    'number',
+                    'decimal',
+                    'boolean',
+                    'select',
+                    'multiselect',
+                    'date',
+                    'url',
+                ]),
+            ],
+
+            'options' => ['nullable', 'array'],
+            'options.*.value' => ['required_with:options', 'string', 'max:255'],
+            'options.*.label' => ['required_with:options', 'array'],
+            'options.*.label.*' => ['nullable', 'string', 'max:255'],
+
+            'validation_rules' => ['nullable', 'array'],
+            'validation_rules.min' => ['nullable', 'numeric'],
+            'validation_rules.max' => ['nullable', 'numeric'],
+
+            'is_filterable' => ['sometimes', 'boolean'],
+            'is_comparable' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        // Pastikan minimal ada satu nama yang terisi.
+        if (collect($data['name'] ?? [])->filter(
+            fn($value) => filled($value)
+        )->isEmpty()) {
+            return back()
+                ->withErrors(['name' => 'Minimal satu nama atribut harus diisi.'])
+                ->withInput();
+        }
+
+        // Normalisasi field pilihan.
+        if (!in_array($data['type'], ['select', 'multiselect'], true)) {
+            $data['options'] = null;
+        }
+
+        // Hilangkan nilai min/max yang kosong.
+        $data['validation_rules'] = collect(
+            $data['validation_rules'] ?? []
+        )->filter(fn($value) => $value !== null && $value !== '')
+            ->all() ?: null;
+
+        $data['is_filterable'] = $request->boolean('is_filterable');
+        $data['is_comparable'] = $request->boolean('is_comparable', true);
+        $data['is_active'] = $request->boolean('is_active', true);
+        $data['sort_order'] = $data['sort_order'] ?? 0;
+
+        Attribute::create($data);
+
+        return redirect()
+            ->route('admin.attributes.index')
+            ->with('success', 'Attribute created successfully.');
+    }
+
+    public function storeTwo(Request $request)
+    {
         $request->validate([
             'name' => 'required|string|max:255',
         ]);
 
         Attribute::create(
             [
-                'group_id' => $request->groupId,
+                'group_id' => $request->group_id,
                 'name' => $request->name,
                 'label' => $request->label,
                 'description' => $request->description,
@@ -59,6 +138,88 @@ class AttributeController extends Controller
 
     public function update(Request $request, string $id)
     {
+        $attribute = Attribute::findOrFail($id);
+
+        $data = $request->validate([
+            'group_id' => ['nullable', 'exists:attribute_groups,id'],
+
+            'name' => ['required', 'array'],
+            'name.*' => ['nullable', 'string', 'max:255'],
+
+            'label' => ['nullable', 'array'],
+            'label.*' => ['nullable', 'string', 'max:255'],
+
+            'description' => ['nullable', 'string'],
+            'icon_svg' => ['nullable', 'string'],
+            'unit' => ['nullable', 'string', 'max:50'],
+
+            'type' => [
+                'required',
+                Rule::in([
+                    'text',
+                    'textarea',
+                    'number',
+                    'decimal',
+                    'boolean',
+                    'select',
+                    'multiselect',
+                    'date',
+                    'url',
+                ]),
+            ],
+
+            'options' => ['nullable', 'array'],
+            'options.*.value' => ['required_with:options', 'string', 'max:255'],
+            'options.*.label' => ['required_with:options', 'array'],
+            'options.*.label.*' => ['nullable', 'string', 'max:255'],
+
+            'validation_rules' => ['nullable', 'array'],
+            'validation_rules.min' => ['nullable', 'numeric'],
+            'validation_rules.max' => ['nullable', 'numeric'],
+
+            'is_filterable' => ['sometimes', 'boolean'],
+            'is_comparable' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        // Pastikan minimal satu terjemahan nama terisi.
+        if (collect($data['name'])->filter(
+            fn($value) => filled($value)
+        )->isEmpty()) {
+            return back()
+                ->withErrors([
+                    'name' => 'Minimal satu nama atribut harus diisi.',
+                ])
+                ->withInput();
+        }
+
+        // Options hanya berlaku untuk select dan multiselect.
+        if (!in_array($data['type'], ['select', 'multiselect'], true)) {
+            $data['options'] = null;
+        }
+
+        // Hilangkan nilai min/max kosong.
+        $data['validation_rules'] = collect(
+            $data['validation_rules'] ?? []
+        )->filter(fn($value) => $value !== null && $value !== '')
+            ->all() ?: null;
+
+        // Checkbox yang tidak dikirim dianggap false.
+        $data['is_filterable'] = $request->boolean('is_filterable');
+        $data['is_comparable'] = $request->boolean('is_comparable');
+        $data['is_active'] = $request->boolean('is_active');
+        $data['sort_order'] = $data['sort_order'] ?? 0;
+
+        $attribute->update($data);
+
+        return redirect()
+            ->route('admin.attributes.index')
+            ->with('success', 'Attribute updated successfully.');
+    }
+
+    public function updateTwo(Request $request, string $id)
+    {
         //
         $request->validate([
             'name' => 'required',
@@ -66,7 +227,7 @@ class AttributeController extends Controller
 
         $attribute = Attribute::findOrFail($id);
 
-        $attribute->group_id = $request->groupId;
+        $attribute->group_id = $request->group_id;
         $attribute->name = $request->name;
         $attribute->label = $request->label;
         $attribute->description = $request->description;

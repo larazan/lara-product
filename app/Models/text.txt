@@ -2,7 +2,8 @@ superadmin@gmail.net
 admin@gmail.com
 password
 
-
+Attribute ini nantinya digunakan sebagai pilihan isian form (input text, input number, select option dll) pada saat input spec produk dengan konsep value -> nilai
+Attribute berfungsi sebagai definisi spesifikasi sekaligus konfigurasi jenis input yang akan ditampilkan secara dinamis pada form spesifikasi produk.
 
 Brand 
 Company

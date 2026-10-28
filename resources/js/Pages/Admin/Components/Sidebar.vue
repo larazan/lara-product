@@ -23,7 +23,7 @@ const menu = [
       { label: 'Categories', href: '/admin/categories' },
       { label: 'Attributes', href: '/admin/attributes' },
       { label: 'Attribute Group', href: '/admin/attribute-groups' },
-      { label: 'Category Attribute', href: '/admin/categorie-attributes' },
+      { label: 'Category Attribute', href: '/admin/category-attributes' },
     ],
   },
   {

@@ -51,10 +51,16 @@ class CategoryAttributeController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return Inertia::render('CategoryAttributes/Index', [
+        return Inertia::render('Admin/CategoryAttribute/IndexTwo', [
             'categoryAttributes' => $categoryAttributes,
             'categories' => Category::query()
                 ->select('id', 'name')
+                ->orderBy('name')
+                ->get(),
+            'attributes' => Attribute::query()
+                ->with([
+                    'attributeGroup:id,name',
+                ])
                 ->orderBy('name')
                 ->get(),
             'filters' => $request->only([
@@ -69,7 +75,7 @@ class CategoryAttributeController extends Controller
      */
     public function create()
     {
-        return Inertia::render('CategoryAttributes/Create', [
+        return Inertia::render('Admin/CategoryAttribute/Create', [
             'categories' => Category::query()
                 ->select('id', 'name')
                 ->orderBy('name')
@@ -154,7 +160,7 @@ class CategoryAttributeController extends Controller
         });
 
         return redirect()
-            ->route('category-attributes.index')
+            ->route('admin.category-attributes.index')
             ->with('success', 'Atribut kategori berhasil ditambahkan.');
     }
 
@@ -169,7 +175,7 @@ class CategoryAttributeController extends Controller
             'attributeScore',
         ]);
 
-        return Inertia::render('CategoryAttributes/Edit', [
+        return Inertia::render('Admin/CategoryAttribute/Edit', [
             'categoryAttribute' => $categoryAttribute,
 
             'categories' => Category::query()
@@ -260,7 +266,7 @@ class CategoryAttributeController extends Controller
         });
 
         return redirect()
-            ->route('category-attributes.index')
+            ->route('admin.category-attributes.index')
             ->with('success', 'Konfigurasi atribut berhasil diperbarui.');
     }
 
@@ -272,7 +278,7 @@ class CategoryAttributeController extends Controller
         $categoryAttribute->delete();
 
         return redirect()
-            ->route('category-attributes.index')
+            ->route('admin.category-attributes.index')
             ->with('success', 'Atribut berhasil dihapus dari kategori.');
     }
 }

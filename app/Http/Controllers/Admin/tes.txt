@@ -1,0 +1,444 @@
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Attribute;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\CategoryAttribute;
+use App\Models\Company;
+use App\Models\Country;
+use App\Models\Product;
+use App\Models\ProductAffiliate;
+use App\Models\ProductAttributeValue;
+use App\Models\ProductFaq;
+use App\Models\ProductImage;
+use App\Models\ProductInstruction;
+use App\Models\ProductNutrition;
+use App\Models\ProductSafetyInstruction;
+use App\Models\ProductVariant;
+use App\Models\ProductVariantAttributeValue;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+
+class ProductController extends Controller
+{
+    /**
+     * GET /admin/products/create
+     * Menampilkan form 5 tahap.
+     */
+    public function create()
+    {
+        $locale = app()->getLocale();
+
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->orderBy('slug')
+            ->get()
+            ->map(fn ($category) => [
+                'id' => $category->id,
+                'name' => $category->getTranslation('name', $locale, false),
+                'parent_id' => $category->parent_id,
+            ]);
+
+        return Inertia::render('Admin/Product/Create', [
+            'categories' => $categories,
+            'brands' => Brand::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'companies' => Company::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'countries' => Country::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'icon']),
+            'locales' => ['en', 'id'],
+        ]);
+    }
+
+    /**
+     * GET /admin/products/attributes?category_id=...
+     * Mengambil atribut yang berlaku pada kategori terpilih.
+     */
+    public function attributes(Request $request)
+    {
+        $data = $request->validate([
+            'category_id' => [
+                'required',
+                'integer',
+                'exists:categories,id',
+            ],
+        ]);
+
+        $locale = app()->getLocale();
+
+        $attributes = CategoryAttribute::query()
+            ->where('category_id', $data['category_id'])
+            ->whereHas('attribute', fn ($query) =>
+                $query->where('is_active', true)
+            )
+            ->with('attribute.group')
+            ->get()
+            ->map(function ($categoryAttribute) use ($locale) {
+                $attribute = $categoryAttribute->attribute;
+
+                if (! $attribute) {
+                    return null;
+                }
+
+                return [
+                    'id' => $attribute->id,
+                    'slug' => $attribute->slug,
+                    'name' => $attribute->getTranslation(
+                        'name', $locale, false
+                    ),
+                    'label' => $attribute->getTranslation(
+                        'label', $locale, false
+                    ),
+                    'type' => $attribute->type,
+                    'unit' => $attribute->unit,
+                    'options' => $attribute->options ?? [],
+                    'validation_rules' => $attribute->validation_rules ?? [],
+                    'is_required' => (bool) $categoryAttribute->is_required,
+                    'is_filterable' => (bool) $attribute->is_filterable,
+                    'is_comparable' => (bool) $attribute->is_comparable,
+                    'sort_order' => $attribute->sort_order,
+                    'group' => $attribute->group ? [
+                        'id' => $attribute->group->id,
+                        'name' => $attribute->group->getTranslation(
+                            'name', $locale, false
+                        ),
+                        'sort_order' => $attribute->group->order ?? 0,
+                    ] : null,
+                ];
+            })
+            ->filter()
+            ->sortBy('sort_order')
+            ->values();
+
+        return response()->json(['data' => $attributes]);
+    }
+
+    /**
+     * POST /admin/products
+     * Menyimpan data dari seluruh tahap.
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            // Tahap 1: Informasi dasar
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => [
+                'nullable', 'string', 'max:255',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('products', 'slug'),
+            ],
+            'category_id' => [
+                'required', 'integer', 'exists:categories,id',
+            ],
+            'brand_id' => [
+                'required', 'integer', 'exists:brands,id',
+            ],
+            'company_id' => [
+                'required', 'integer', 'exists:companies,id',
+            ],
+            'country_id' => [
+                'required', 'integer', 'exists:countries,id',
+            ],
+            'description' => ['nullable', 'string'],
+            'year' => ['nullable', 'integer', 'min:1800', 'max:2100'],
+
+            // Tahap 2: Spesifikasi
+            'attributes' => ['nullable', 'array'],
+            'attributes.*' => ['nullable', 'string', 'max:10000'],
+
+            // Tahap 3: Varian
+            'variants' => ['nullable', 'array'],
+            'variants.*.name' => ['required', 'string', 'max:255'],
+            'variants.*.sku' => ['nullable', 'string', 'max:100'],
+            'variants.*.price' => ['required', 'numeric', 'min:0'],
+            'variants.*.compare_at_price' => [
+                'nullable', 'numeric', 'min:0',
+            ],
+            'variants.*.stock' => ['nullable', 'integer', 'min:0'],
+            'variants.*.is_active' => ['nullable', 'boolean'],
+            'variants.*.attributes' => ['nullable', 'array'],
+            'variants.*.attributes.*' => [
+                'nullable', 'string', 'max:255',
+            ],
+
+            // Tahap 4: Media. Berkas diunggah melalui multipart/form-data.
+            'images' => ['nullable', 'array'],
+            'images.*' => [
+                'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120',
+            ],
+            'videos' => ['nullable', 'array'],
+            'videos.*' => [
+                'file', 'mimes:mp4,webm,mov', 'max:51200',
+            ],
+
+            // Tahap 5: Informasi tambahan
+            'affiliates' => ['nullable', 'array'],
+            'affiliates.*.name' => ['nullable', 'string', 'max:255'],
+            'affiliates.*.url' => ['required', 'url', 'max:2048'],
+
+            'faqs' => ['nullable', 'array'],
+            'faqs.*.question' => ['required', 'string', 'max:1000'],
+            'faqs.*.answer' => ['required', 'string'],
+
+            'instructions' => ['nullable', 'array'],
+            'instructions.*.title' => ['nullable', 'string', 'max:255'],
+            'instructions.*.content' => ['required', 'string'],
+
+            'nutrition' => ['nullable', 'array'],
+            'nutrition.*.name' => ['required', 'string', 'max:255'],
+            'nutrition.*.value' => ['required', 'string', 'max:255'],
+            'nutrition.*.unit' => ['nullable', 'string', 'max:50'],
+
+            'safety_instructions' => ['nullable', 'array'],
+            'safety_instructions.*.title' => [
+                'nullable', 'string', 'max:255',
+            ],
+            'safety_instructions.*.content' => [
+                'required', 'string',
+            ],
+        ]);
+
+        // Ambil hanya atribut yang memang terdaftar untuk kategori ini.
+        $categoryAttributeIds = CategoryAttribute::query()
+            ->where('category_id', $data['category_id'])
+            ->whereHas('attribute', fn ($query) =>
+                $query->where('is_active', true)
+            )
+            ->pluck('attribute_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        foreach (array_keys($data['attributes'] ?? []) as $attributeId) {
+            if (! in_array((int) $attributeId, $categoryAttributeIds, true)) {
+                return back()
+                    ->withErrors([
+                        'attributes' => 'Terdapat atribut yang tidak berlaku untuk kategori ini.',
+                    ])
+                    ->withInput();
+            }
+        }
+
+        // Validasi ID atribut yang dipakai pada varian.
+        $variantAttributeIds = collect($data['variants'] ?? [])
+            ->flatMap(fn ($variant) =>
+                array_keys($variant['attributes'] ?? [])
+            )
+            ->unique()
+            ->map(fn ($id) => (int) $id);
+
+        if ($variantAttributeIds->diff($categoryAttributeIds)->isNotEmpty()) {
+            return back()
+                ->withErrors([
+                    'variants' => 'Terdapat atribut varian yang tidak berlaku untuk kategori ini.',
+                ])
+                ->withInput();
+        }
+
+        $product = null;
+        $storedFiles = [];
+
+        try {
+            DB::transaction(function () use (
+                $request,
+                $data,
+                &$product,
+                &$storedFiles
+            ) {
+                // -------------------------------------------------
+                // TAHAP 1: Produk utama
+                // -------------------------------------------------
+                $slug = $data['slug'] ?: Str::slug($data['name']);
+
+                // Pastikan slug otomatis unik.
+                $baseSlug = $slug;
+                $counter = 1;
+
+                while (Product::where('slug', $slug)->exists()) {
+                    $slug = $baseSlug . '-' . $counter++;
+                }
+
+                $product = Product::create([
+                    'user_id' => $request->user()?->id,
+                    'category_id' => $data['category_id'],
+                    'brand_id' => $data['brand_id'],
+                    'company_id' => $data['company_id'],
+                    'country_id' => $data['country_id'],
+                    'name' => $data['name'],
+                    'slug' => $slug,
+                    'description' => $data['description'] ?? null,
+                    'year' => $data['year'] ?? null,
+                    'is_featured' => false,
+                    'is_active' => true,
+                    'published_at' => null,
+                ]);
+
+                // -------------------------------------------------
+                // TAHAP 2: Nilai spesifikasi produk
+                // -------------------------------------------------
+                foreach (($data['attributes'] ?? []) as $attributeId => $value) {
+                    if ($value === null || $value === '') {
+                        continue;
+                    }
+
+                    ProductAttributeValue::create([
+                        'product_id' => $product->id,
+                        'attribute_id' => $attributeId,
+                        'value' => is_array($value)
+                            ? json_encode($value)
+                            : (string) $value,
+                    ]);
+                }
+
+                // -------------------------------------------------
+                // TAHAP 3: Varian dan nilai atribut varian
+                // -------------------------------------------------
+                foreach (($data['variants'] ?? []) as $variantData) {
+                    $variant = ProductVariant::create([
+                        'product_id' => $product->id,
+                        'name' => $variantData['name'],
+                        'sku' => $variantData['sku'] ?? null,
+                        'price' => $variantData['price'],
+                        'compare_at_price' =>
+                            $variantData['compare_at_price'] ?? null,
+                        'stock' => $variantData['stock'] ?? 0,
+                        'is_active' => $variantData['is_active'] ?? true,
+                    ]);
+
+                    foreach (($variantData['attributes'] ?? []) as $attributeId => $value) {
+                        if ($value === null || $value === '') {
+                            continue;
+                        }
+
+                        ProductVariantAttributeValue::create([
+                            'product_variant_id' => $variant->id,
+                            'attribute_id' => $attributeId,
+                            'value' => (string) $value,
+                        ]);
+                    }
+                }
+
+                // -------------------------------------------------
+                // TAHAP 4: Gambar dan video
+                // Asumsi ProductImage menyimpan image_path, type,
+                // dan sort_order. Sesuaikan dengan migration Anda.
+                // -------------------------------------------------
+                foreach ($request->file('images', []) as $index => $file) {
+                    $path = $file->store(
+                        "products/{$product->id}/images",
+                        'public'
+                    );
+
+                    $storedFiles[] = $path;
+
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_path' => $path,
+                        'type' => 'image',
+                        'sort_order' => $index,
+                    ]);
+                }
+
+                foreach ($request->file('videos', []) as $index => $file) {
+                    $path = $file->store(
+                        "products/{$product->id}/videos",
+                        'public'
+                    );
+
+                    $storedFiles[] = $path;
+
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_path' => $path,
+                        'type' => 'video',
+                        'sort_order' => count($data['images'] ?? []) + $index,
+                    ]);
+                }
+
+                // -------------------------------------------------
+                // TAHAP 5A: Link affiliate
+                // -------------------------------------------------
+                foreach (($data['affiliates'] ?? []) as $item) {
+                    ProductAffiliate::create([
+                        'product_id' => $product->id,
+                        'name' => $item['name'] ?? null,
+                        'url' => $item['url'],
+                    ]);
+                }
+
+                // -------------------------------------------------
+                // TAHAP 5B: FAQ
+                // -------------------------------------------------
+                foreach (($data['faqs'] ?? []) as $index => $item) {
+                    ProductFaq::create([
+                        'product_id' => $product->id,
+                        'question' => $item['question'],
+                        'answer' => $item['answer'],
+                        'sort_order' => $index,
+                    ]);
+                }
+
+                // -------------------------------------------------
+                // TAHAP 5C: Petunjuk penggunaan
+                // -------------------------------------------------
+                foreach (($data['instructions'] ?? []) as $index => $item) {
+                    ProductInstruction::create([
+                        'product_id' => $product->id,
+                        'title' => $item['title'] ?? null,
+                        'content' => $item['content'],
+                        'sort_order' => $index,
+                    ]);
+                }
+
+                // -------------------------------------------------
+                // TAHAP 5D: Informasi nutrisi
+                // -------------------------------------------------
+                foreach (($data['nutrition'] ?? []) as $item) {
+                    ProductNutrition::create([
+                        'product_id' => $product->id,
+                        'name' => $item['name'],
+                        'value' => $item['value'],
+                        'unit' => $item['unit'] ?? null,
+                    ]);
+                }
+
+                // -------------------------------------------------
+                // TAHAP 5E: Instruksi keselamatan
+                // -------------------------------------------------
+                foreach (($data['safety_instructions'] ?? []) as $index => $item) {
+                    ProductSafetyInstruction::create([
+                        'product_id' => $product->id,
+                        'title' => $item['title'] ?? null,
+                        'content' => $item['content'],
+                        'sort_order' => $index,
+                    ]);
+                }
+            });
+        } catch (\Throwable $exception) {
+            // DB rollback tidak menghapus berkas yang sudah tersimpan.
+            foreach ($storedFiles as $path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            throw $exception;
+        }
+
+        return redirect()
+            ->route('admin.products.create')
+            ->with('success', 'Produk berhasil dibuat.');
+    }
+}
