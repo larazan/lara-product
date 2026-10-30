@@ -9,6 +9,8 @@ import PaginationMod from '../Components/PaginationMod.vue';
 import ImageUploadMod from '../Components/ImageUploadMod.vue';
 import MyEditor from '../Components/MyEditor.vue';
 import { limitWords } from '@/Utils/text.js'
+import SearchDropdown from '../Components/SearchDropdown.vue';
+import SearchDropdownSelect from '../Components/SearchDropdownSelect.vue';
 
 const props = defineProps({
     page: Number,
@@ -33,6 +35,10 @@ const resetForm = () => {
     formGroup.clearErrors()
 }
 
+// ---------------------------------------------------------
+// LOCALES
+// ---------------------------------------------------------
+
 const locales = computed(() => {
     return props.locales?.length
         ? props.locales
@@ -52,7 +58,7 @@ const createEmptyNames = () => {
 const formGroup = useForm({
     categoryId: "",
     name: createEmptyNames(),
-    label: "",
+    label: createEmptyNames(),
     icon: "",
 });
 
@@ -104,21 +110,45 @@ const closeModal = () => {
     currentLocale.value = page.props.locale || props.locales[0] || 'en'
 }
 
+/// Helper untuk mem-parsing data translatable (name, label, dll)
+const parseTranslations = (value) => {
+    let parsed = {};
+    if (value) {
+        if (typeof value === 'string') {
+            try {
+                parsed = JSON.parse(value);
+            } catch {
+                parsed = { [locales.value[0]]: value };
+            }
+        } else if (typeof value === 'object') {
+            parsed = value;
+        }
+    }
+
+    return {
+        ...createEmptyNames(),
+        ...parsed,
+    };
+};
+
 // open edit modal
 const openEditModal = (group) => {
     showEditModal.value = true;
     idGroup.value = group.id;
 
-    // formGroup.name = group.name;
-    formGroup.name = {
-        ...createEmptyNames(),
-        ...(group.name ?? {}),
-    }
-    formGroup.label = group.label;
-    formGroup.categoryId = group.category_id;
-    formGroup.icon = group.icon
+    // Gunakan parseTranslations untuk name (mendukung JSON string / object)
+    formGroup.name = parseTranslations(group.name);
 
-    currentLocale.value = page.props.locale || locales.value[0] || 'en'
+    // Jika label juga multibahasa, ubah ke parseTranslations(group.label). 
+    // Jika label hanya teks biasa, biarkan seperti di bawah:
+    formGroup.label = parseTranslations(group.label) ?? '';
+
+    // Tangkap category_id dengan fallback ke categoryId
+    formGroup.categoryId = group.category_id ?? '';
+
+    formGroup.icon = group.icon ?? '';
+
+    currentLocale.value = page.props.locale || locales.value[0] || 'en';
 }
 
 // update method
@@ -410,11 +440,14 @@ const deleteSelected = () => {
                                             </span>
                                         </div>
                                         <div class="font-semibold text-sm text-gray-800">
-                                            <div class="flex items-center space-x-1">
-                                                <p>{{ group.name }}</p> <span
-                                                    class="flex w-5 h-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs">
-                                                    {{ group.order }}
-                                                </span>
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center space-x-1">
+                                                    <p>{{ group.name }}</p> <span
+                                                        class="flex w-5 h-5 items-center justify-center rounded-full bg-amber-500 text-white text-xs">
+                                                        {{ group.order }}
+                                                    </span>
+                                                </div>
+                                                <p class="text-xs text-gray-500">{{ group.label }}</p>
                                             </div>
 
                                         </div>
@@ -540,19 +573,12 @@ const deleteSelected = () => {
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="category-parent"
                                         class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Category
+                                        Category {{ formGroup.categoryId }}
                                     </label>
 
-                                    <select id="category" v-model="formGroup.categoryId"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                        <option :value="null">
-                                            No Parent (Root Category)
-                                        </option>
-
-                                        <option v-for="option in props.categories" :key="option.id" :value="option.id">
-                                            {{ categoryName(option) }}
-                                        </option>
-                                    </select>
+                                    <SearchDropdownSelect v-model="formGroup.categoryId" :items="categories"
+                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        placeholder="Pilih kategori..." search-placeholder="Cari kategori..." />
 
                                     <p v-if="formGroup.errors.categoryId" class="mt-1 text-sm text-red-600">
                                         {{ formGroup.errors.categoryId }}
@@ -668,7 +694,7 @@ const deleteSelected = () => {
                                         Category
                                     </label>
 
-                                    <select id="category" v-model="formGroup.categoryId"
+                                    <!-- <select id="category" v-model="formGroup.categoryId"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                         <option :value="null">
                                             No Parent (Root Category)
@@ -677,7 +703,16 @@ const deleteSelected = () => {
                                         <option v-for="option in props.categories" :key="option.id" :value="option.id">
                                             {{ categoryName(option) }}
                                         </option>
-                                    </select>
+                                    </select> -->
+
+                                    <SearchDropdown v-model="formGroup.categoryId" :items="props.categories"
+                                        value-key="id" placeholder="Choose a category..."
+                                        search-placeholder="Search categories...">
+                                        <template #item="{ item }">
+                                            <div class="text-sm font-semibold text-green-700">{{ categoryName(item) }}
+                                            </div>
+                                        </template>
+                                    </SearchDropdown>
 
                                     <p v-if="formGroup.errors.categoryId" class="mt-1 text-sm text-red-600">
                                         {{ formGroup.errors.categoryId }}

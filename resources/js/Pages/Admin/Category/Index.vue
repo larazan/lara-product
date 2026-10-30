@@ -10,6 +10,8 @@ import ConfirmModal from '../Components/ConfirmModal.vue';
 import PaginationMod from '../Components/PaginationMod.vue';
 import ImageUploadMod from '../Components/ImageUploadMod.vue';
 import PaginationFix from '../Components/PaginationFix.vue';
+import SearchDropdown from '../Components/SearchDropdown.vue';
+import SearchDropdownSelect from '../Components/SearchDropdownSelect.vue';
 
 const props = defineProps({
     page: Number,
@@ -109,20 +111,41 @@ const closeModal = () => {
 }
 
 // open edit modal
+// open edit modal
 const openEditModal = (category) => {
     showEditModal.value = true;
     idCategory.value = category.id;
 
-    // formCategory.name = category.name;
+    // 1. Tangani category.name apakah berupa string JSON atau objek
+    let parsedName = {};
+    if (category.name) {
+        if (typeof category.name === 'string') {
+            try {
+                parsedName = JSON.parse(category.name);
+            } catch {
+                // Fallback jika string biasa (bukan JSON)
+                parsedName = { [locales.value[0]]: category.name };
+            }
+        } else if (typeof category.name === 'object') {
+            parsedName = category.name;
+        }
+    }
+
+    // 2. Masukkan ke formCategory.name dengan fallback kosong
     formCategory.name = {
         ...createEmptyNames(),
-        ...(category.name ?? {}),
-    }
-    formCategory.parentId = category.parent_id;
-    formCategory.image = null // 👈 important
-    formCategory.old_image_url = category.image_url
+        ...parsedName,
+    };
 
-    currentLocale.value = page.props.locale || locales.value[0] || 'en'
+    // 3. Pastikan mapping parent_id sesuai dengan properti database Anda 
+    // (apakah parent_id atau parentId)
+    formCategory.parentId = category.parent_id ?? category.parentId ?? "";
+
+    formCategory.image = null; // Reset file input
+    formCategory.old_image_url = category.image_url || category.old_image_url;
+
+    // Set locale aktif
+    currentLocale.value = page.props.locale || locales.value[0] || 'en';
 }
 
 // update method
@@ -263,7 +286,7 @@ const deleteSelected = () => {
             <div class="w-full mb-1">
                 <div class="mb-4">
                     <!-- breadcrumb -->
-                    <pre> {{ props.locales }} </pre>
+                    <!-- <pre> {{ props.parentOption }} </pre> -->
                     <!-- end breadcrumb -->
                     <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">All categories</h1>
                 </div>
@@ -533,7 +556,7 @@ const deleteSelected = () => {
                                         Parent Category
                                     </label>
 
-                                    <select id="category-parent" v-model="formCategory.parent_id"
+                                    <!-- <select id="category-parent" v-model="formCategory.parent_id"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                         <option :value="null">
                                             No Parent (Root Category)
@@ -543,7 +566,12 @@ const deleteSelected = () => {
                                             :value="option.id">
                                             {{ parentName(option) }}
                                         </option>
-                                    </select>
+                                    </select> -->
+
+                                    <SearchDropdownSelect v-model="formCategory.parentId" :items="parentOption"
+                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        placeholder="Pilih parent kategori..."
+                                        search-placeholder="Cari parent kategori..." />
 
                                     <p v-if="formCategory.errors.parent_id" class="mt-1 text-sm text-red-600">
                                         {{ formCategory.errors.parent_id }}
@@ -646,7 +674,7 @@ const deleteSelected = () => {
                                     Parent Category
                                 </label>
 
-                                <select id="category-parent" v-model="formCategory.parent_id"
+                                <!-- <select id="category-parent" v-model="formCategory.parentId"
                                     class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                     <option :value="null">
                                         No Parent (Root Category)
@@ -655,10 +683,15 @@ const deleteSelected = () => {
                                     <option v-for="option in props.parentOption" :key="option.id" :value="option.id">
                                         {{ parentName(option) }}
                                     </option>
-                                </select>
+                                </select> -->
 
-                                <p v-if="formCategory.errors.parent_id" class="mt-1 text-sm text-red-600">
-                                    {{ formCategory.errors.parent_id }}
+                                <SearchDropdownSelect v-model="formCategory.parentId" :items="parentOption"
+                                    value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                    placeholder="Pilih parent kategori..."
+                                    search-placeholder="Cari parent kategori..." />
+
+                                <p v-if="formCategory.errors.parentId" class="mt-1 text-sm text-red-600">
+                                    {{ formCategory.errors.parentId }}
                                 </p>
                             </div>
 

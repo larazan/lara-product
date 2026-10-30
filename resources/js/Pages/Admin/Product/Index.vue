@@ -3,7 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import ToggleSwitch from '@/Pages/User/Components/ToggleSwitch.vue';
 import { ref, reactive, watch, computed } from 'vue';
-import { router, Head, useForm, usePage } from '@inertiajs/vue3';
+import { router, Head, useForm, usePage, Link } from '@inertiajs/vue3';
 import ConfirmModal from '../Components/ConfirmModal.vue';
 import PaginationMod from '../Components/PaginationMod.vue';
 import ImageUploadMod from '../Components/ImageUploadMod.vue';
@@ -317,7 +317,7 @@ const deleteSelected = () => {
                         </div>
                     </div>
                     <div class="flex items-center ml-auto space-x-2 sm:space-x-3">
-                        <button @click="openAddModal" type="button"
+                        <Link :href="route('admin.product.create')"
                             class="inline-flex items-center justify-center w-1/2 px-3 py-2 text-sm font-medium text-center text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 sm:w-auto dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                             <svg class="w-5 h-5 mr-2 -ml-1" fill="currentColor" viewBox="0 0 20 20"
                                 xmlns="http://www.w3.org/2000/svg">
@@ -326,7 +326,7 @@ const deleteSelected = () => {
                                     clip-rule="evenodd"></path>
                             </svg>
                             Add product
-                        </button>
+                        </Link>
                         <a href="#"
                             class="inline-flex items-center justify-center w-1/2 px-3 py-2 text-sm font-medium text-center text-gray-900 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-primary-300 sm:w-auto dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-gray-700">
                             <svg class="w-5 h-5 mr-2 -ml-1" fill="currentColor" viewBox="0 0 20 20"

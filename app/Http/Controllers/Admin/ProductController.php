@@ -2,17 +2,31 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Attribute;
 use App\Models\Brand;
-use App\Models\Product;
 use App\Models\Category;
 use App\Models\CategoryAttribute;
 use App\Models\Company;
 use App\Models\Country;
+use App\Models\Product;
+use App\Models\ProductAffiliate;
+use App\Models\ProductAttributeValue;
+use App\Models\ProductFaq;
+use App\Models\ProductImage;
+use App\Models\ProductInstruction;
+use App\Models\ProductNutrition;
+use App\Models\ProductSafetyInstruction;
+use App\Models\ProductVariant;
+use App\Models\ProductVariantAttributeValue;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+
 
 class ProductController extends Controller
 {
@@ -46,6 +60,38 @@ class ProductController extends Controller
             'countries' => $countries,
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
+        ]);
+    }
+
+    public function create()
+    {
+        $locale = app()->getLocale();
+
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->orderBy('slug')
+            ->get()
+            ->map(fn($category) => [
+                'id' => $category->id,
+                'name' => $category->getTranslation('name', $locale, false),
+                'parent_id' => $category->parent_id,
+            ]);
+
+        return Inertia::render('Admin/Product/Create', [
+            'categories' => $categories,
+            'brands' => Brand::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'companies' => Company::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'countries' => Country::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'icon']),
+            'locales' => ['en', 'id'],
         ]);
     }
 

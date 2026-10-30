@@ -9,6 +9,8 @@ import PaginationMod from '../Components/PaginationMod.vue';
 import ImageUploadMod from '../Components/ImageUploadMod.vue';
 import MyEditor from '../Components/MyEditor.vue';
 import { limitWords } from '@/Utils/text.js'
+import SearchDropdownAlt from '../Components/SearchDropdownAlt.vue';
+import SearchDropdownSelect from '../Components/SearchDropdownSelect.vue';
 
 const props = defineProps({
     page: Number,
@@ -127,6 +129,33 @@ const groupName = (group) => {
         ?? ''
 }
 
+const groupNameAlt = (group) => {
+    const names = group.name
+
+    if (!names) return ''
+
+    // Mendukung nama berupa JSON translatable
+    if (typeof names === 'string') {
+        try {
+            const parsed = JSON.parse(names)
+
+            return parsed[currentLocale.value]
+                || parsed[page.props.locale]
+                || parsed.en
+                || Object.values(parsed)[0]
+                || ''
+        } catch {
+            return names
+        }
+    }
+
+    return names[currentLocale.value]
+        || names[page.props.locale]
+        || names.en
+        || Object.values(names)[0]
+        || ''
+}
+
 // ---------------------------------------------------------
 // TRANSLATION ERRORS
 // ---------------------------------------------------------
@@ -167,30 +196,43 @@ const closeModal = () => {
     currentLocale.value = page.props.locale || props.locales[0] || 'en'
 }
 
+// Helper kecil untuk parse data translatable (bisa berupa JSON string atau object)
+const parseTranslations = (value) => {
+    let parsed = {};
+    if (value) {
+        if (typeof value === 'string') {
+            try {
+                parsed = JSON.parse(value);
+            } catch {
+                // Jika string biasa (bukan JSON), masukkan ke bahasa utama
+                parsed = { [locales.value[0]]: value };
+            }
+        } else if (typeof value === 'object') {
+            parsed = value;
+        }
+    }
+
+    return {
+        ...createEmptyNames(),
+        ...parsed,
+    };
+};
+
 // ---------------------------------------------------------
 // OPEN EDIT MODAL
 // ---------------------------------------------------------
 
 const openEditModal = (attribute) => {
-    idAttribute.value = attribute.id
+    idAttribute.value = attribute.id;
 
     const payload = {
-        group_id: attribute.group_id ?? null,
+        // Pastikan menangkap group_id dengan benar (mendukung group_id atau group.id)
+        group_id: attribute.group_id ?? attribute.group?.id ?? null,
         slug: attribute.slug ?? '',
 
-        name: Object.fromEntries(
-            locales.value.map(locale => [
-                locale,
-                attribute.name?.[locale] ?? '',
-            ])
-        ),
-
-        label: Object.fromEntries(
-            locales.value.map(locale => [
-                locale,
-                attribute.label?.[locale] ?? '',
-            ])
-        ),
+        // Parse name dan label agar aman dari format string JSON atau object
+        name: parseTranslations(attribute.name),
+        label: parseTranslations(attribute.label),
 
         icon_svg: attribute.icon_svg ?? '',
         description: attribute.description ?? '',
@@ -200,12 +242,7 @@ const openEditModal = (attribute) => {
         options: Array.isArray(attribute.options)
             ? attribute.options.map(option => ({
                 value: option.value ?? '',
-                label: Object.fromEntries(
-                    locales.value.map(locale => [
-                        locale,
-                        option.label?.[locale] ?? '',
-                    ])
-                ),
+                label: parseTranslations(option.label),
             }))
             : [],
 
@@ -218,18 +255,18 @@ const openEditModal = (attribute) => {
         is_comparable: attribute.is_comparable ?? true,
         is_active: attribute.is_active ?? true,
         sort_order: attribute.sort_order ?? 0,
-    }
+    };
 
     // Set the selected attribute as the new form defaults.
-    formAttribute.defaults(payload)
-    formAttribute.reset()
-    formAttribute.clearErrors()
+    formAttribute.defaults(payload);
+    formAttribute.reset();
+    formAttribute.clearErrors();
 
     currentLocale.value =
-        page.props.locale || locales.value[0] || 'en'
+        page.props.locale || locales.value[0] || 'en';
 
-    showCreateModal.value = false
-    showEditModal.value = true
+    showCreateModal.value = false;
+    showEditModal.value = true;
 }
 
 // ---------------------------------------------------------
@@ -396,7 +433,7 @@ const deleteSelected = () => {
             <div class="w-full mb-1">
                 <div class="mb-4">
                     <!-- breadcrumb -->
-                    <!-- <pre>{{ props.attributes }}</pre> -->
+                    <!-- <pre>{{ props.groups }}</pre> -->
 
                     <!-- end breadcrumb -->
                     <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">All attributes</h1>
@@ -688,7 +725,7 @@ const deleteSelected = () => {
                                         Group
                                     </label>
 
-                                    <select id="group" v-model="formAttribute.group_id"
+                                    <!-- <select id="group" v-model="formAttribute.group_id"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                         <option :value="null">
                                             No Parent (Root Category)
@@ -697,7 +734,11 @@ const deleteSelected = () => {
                                         <option v-for="option in props.groups" :key="option.id" :value="option.id">
                                             {{ groupName(option) }}
                                         </option>
-                                    </select>
+                                    </select> -->
+
+                                    <SearchDropdownSelect v-model="formAttribute.group_id" :items="groups"
+                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        placeholder="Pilih group..." search-placeholder="Cari group..." />
 
                                     <p v-if="formAttribute.errors.group_id" class="mt-1 text-sm text-red-600">
                                         {{ formAttribute.errors.group_id }}
@@ -1021,7 +1062,7 @@ const deleteSelected = () => {
                                         Group
                                     </label>
 
-                                    <select id="group" v-model="formAttribute.group_id"
+                                    <!-- <select id="group" v-model="formAttribute.group_id"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                         <option :value="null">
                                             No Parent (Root Category)
@@ -1030,7 +1071,11 @@ const deleteSelected = () => {
                                         <option v-for="option in props.groups" :key="option.id" :value="option.id">
                                             {{ groupName(option) }}
                                         </option>
-                                    </select>
+                                    </select> -->
+
+                                    <SearchDropdownSelect v-model="formAttribute.group_id" :items="groups"
+                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        placeholder="Pilih group..." search-placeholder="Cari group..." />
 
                                     <p v-if="formAttribute.errors.group_id" class="mt-1 text-sm text-red-600">
                                         {{ formAttribute.errors.group_id }}

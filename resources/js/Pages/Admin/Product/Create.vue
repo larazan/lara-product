@@ -8,6 +8,7 @@ import BasicInfoStep from './Components/BasicInfoStep.vue'
 import ProductAttributesStep from './Components/ProductAttributesStep.vue'
 import ProductVariantsStep from './Components/ProductVariantsStep.vue'
 import ProductMediaStep from './Components/ProductMediaStep.vue'
+import ProductAdditionalStep from './Components/ProductAdditionalStep.vue'
 
 const currentStep = ref(1)
 const completedSteps = ref([])
@@ -174,6 +175,9 @@ function submit() {
                 <!-- Tahap 4: Media -->
                 <ProductMediaStep v-else-if="currentStep === 4" :form="form" :existingImages="images"
                     :existingVideos="videos" :maxImages="10" :maxVideos="3" :maxImageSizeMb="5" :maxVideoSizeMb="50" />
+
+                <!-- Tahap 5: Additional -->
+                <ProductAdditionalStep v-else-if="currentStep === 5" :form="form" />
 
                 <!-- Placeholder tahap berikutnya -->
                 <div v-else class="flex min-h-64 items-center justify-center

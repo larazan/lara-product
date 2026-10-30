@@ -7,6 +7,8 @@ import { router, Head, useForm, usePage, Link } from '@inertiajs/vue3';
 import ConfirmModal from '../Components/ConfirmModal.vue';
 import PaginationMod from '../Components/PaginationMod.vue';
 import MyEditor from '../Components/MyEditor.vue';
+import SearchDropdown from '../Components/SearchDropdown.vue';
+import SearchDropdownAlt from '../Components/SearchDropdownAlt.vue';
 
 const props = defineProps({
     page: Number,
@@ -93,6 +95,33 @@ const categoryName = (category) => {
     return category.name?.[currentLocale.value]
         ?? category.name?.[locales[0]]
         ?? ''
+}
+
+const categoryNameAlt = (option) => {
+    const names = option.name
+
+    if (!names) return ''
+
+    // Mendukung nama berupa JSON translatable
+    if (typeof names === 'string') {
+        try {
+            const parsed = JSON.parse(names)
+
+            return parsed[currentLocale.value]
+                || parsed[page.props.locale]
+                || parsed.en
+                || Object.values(parsed)[0]
+                || ''
+        } catch {
+            return names
+        }
+    }
+
+    return names[currentLocale.value]
+        || names[page.props.locale]
+        || names.en
+        || Object.values(names)[0]
+        || ''
 }
 
 const attributeName = (attribute) => {
@@ -182,8 +211,8 @@ const openEditModal = (catAttribute) => {
             higher_is_better: Boolean(catAttribute.higher_is_better) ?? true,
             scoring_method: catAttribute.scoring_method ?? 'range',
             scoring_config: {
-                min: catAttribute.score.scoring_config?.min ?? null,
-                max: catAttribute.score.scoring_config?.max ?? null,
+                min: catAttribute.scoring_config?.min ?? null,
+                max: catAttribute.scoring_config?.max ?? null,
             }
         },
 
@@ -365,7 +394,7 @@ const deleteSelected = () => {
             <div class="w-full mb-1">
                 <div class="mb-4">
                     <!-- breadcrumb -->
-                    <!-- <pre>{{ props.attributes }}</pre> -->
+                    <!-- <pre>{{ props.categoryAttributes }}</pre> -->
 
                     <!-- end breadcrumb -->
                     <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">All attributes</h1>
@@ -452,7 +481,7 @@ const deleteSelected = () => {
                 class="rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-64">
                 <option value="">Semua kategori</option>
                 <option v-for="category in categories" :key="category.id" :value="category.id">
-                    {{ category.name }}
+                    {{ categoryName(category) }}
                 </option>
             </select>
 
@@ -526,8 +555,8 @@ const deleteSelected = () => {
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
                                             <label :for="`checkbox-${item.id}`" class="sr-only">checkbox</label>
                                             <div class="px-2 text-sm font-semibold text-gray-600">
-                                                {{ ((props.categoryAttributes.meta.current_page - 1) *
-                                                    props.categoryAttributes.meta.per_page) +
+                                                {{ ((props.categoryAttributes.current_page - 1) *
+                                                    props.categoryAttributes.per_page) +
                                                     index + 1 }}
                                             </div>
                                         </div>
@@ -537,17 +566,19 @@ const deleteSelected = () => {
 
                                         <div class="font-semibold text-sm text-gray-800">
                                             <div class="flex flex-col">
-                                                <p>{{ item.attribute?.name }}</p>
+                                                <p>{{ item.attribute?.name.en }}</p>
+                                                <p>{{ item.attribute?.name.id }}</p>
                                                 <div class="mt-1 text-xs text-gray-500">
-                                                    {{ item.category?.name }}
+                                                    <p>{{ item.category?.name.en }}</p>
+                                                    <p>{{ item.category?.name.id }}</p>
                                                 </div>
                                             </div>
 
                                         </div>
                                     </td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
-                                        {{ item.attribute?.attribute_group?.name
-                                            ?? item.attribute?.attributeGroup?.name
+                                        {{ item.attribute?.group?.name.en
+                                            ?? item.attribute?.group?.name.en
                                             ?? 'Tanpa grup' }}
                                     </td>
                                     <td
@@ -616,7 +647,7 @@ const deleteSelected = () => {
             </div>
         </div>
 
-        <PaginationMod :meta="props.categoryAttributes.meta" :query="{ search: search }" :limit="props.page" />
+        <PaginationMod :meta="props.categoryAttributes" :query="{ search: search }" :limit="props.page" />
 
 
         <!-- Edit Attribute Modal -->
@@ -901,13 +932,26 @@ const deleteSelected = () => {
                                     Kategori <span class="text-red-500">*</span>
                                 </label>
 
-                                <select v-model="formCatAttribute.category_id" required
+                                <!-- <select v-model="formCatAttribute.category_id" required
                                     class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Pilih kategori</option>
                                     <option v-for="category in categories" :key="category.id" :value="category.id">
                                         {{ categoryName(category) }}
                                     </option>
-                                </select>
+                                </select> -->
+
+                                <!-- <SearchDropdown v-model="formCatAttribute.category_id" :items="categories"
+                                    value-key="id" placeholder="Choose a category..."
+                                    search-placeholder="Search categories...">
+                                    <template #item="{ item }">
+                                        <div class="text-sm font-semibold text-green-700">{{ categoryNameAlt(item) }}
+                                        </div>
+                                    </template>
+                                </SearchDropdown> -->
+
+                                <SearchDropdownAlt v-model="formCatAttribute.category_id" :items="categories"
+                                    value-key="id" label-key="name" locale="id" placeholder="Pilih category..."
+                                    search-placeholder="Cari category..." />
 
                                 <p v-if="formCatAttribute.errors.category_id" class="mt-1 text-sm text-red-600">
                                     {{ formCatAttribute.errors.category_id }}
@@ -919,7 +963,7 @@ const deleteSelected = () => {
                                     Atribut <span class="text-red-500">*</span>
                                 </label>
 
-                                <select v-model="formCatAttribute.attribute_id" required
+                                <!-- <select v-model="formCatAttribute.attribute_id" required
                                     class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Pilih atribut</option>
 
@@ -932,7 +976,11 @@ const deleteSelected = () => {
                                             </template>
                                         </option>
                                     </optgroup>
-                                </select>
+                                </select> -->
+
+                                <SearchDropdownAlt v-model="formCatAttribute.attribute_id" :items="attributes"
+                                    value-key="id" label-key="name" locale="id" placeholder="Pilih attribute..."
+                                    search-placeholder="Cari attribute..." />
 
                                 <p v-if="formCatAttribute.errors.attribute_id" class="mt-1 text-sm text-red-600">
                                     {{ formCatAttribute.errors.attribute_id }}

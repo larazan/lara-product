@@ -23,8 +23,8 @@ class CategoryAttributeController extends Controller
         $categoryAttributes = CategoryAttribute::query()
             ->with([
                 'category:id,name',
-                'attribute:id,name,attribute_group_id,type,unit',
-                'attribute.attributeGroup:id,name',
+                'attribute:id,name,group_id,type,unit',
+                'attribute.group:id,name',
                 'attributeScore',
             ])
             ->when(

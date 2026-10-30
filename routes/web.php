@@ -139,7 +139,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // product
     Route::get('/products', [ProductAdminController::class, 'index'])->name('admin.products.index');
-    Route::post('/product/create', [ProductAdminController::class, 'store'])->name('admin.product.create');
+    Route::get('/product/create', [ProductAdminController::class, 'create'])->name('admin.product.create');
+    Route::post('/product/store', [ProductAdminController::class, 'store'])->name('admin.product.store');
     Route::put('/product/update/{id}', [ProductAdminController::class, 'update'])->name('admin.product.update');
     Route::delete('/product/delete/{id}', [ProductAdminController::class, 'destroy'])->name('admin.product.destroy');
     Route::put('/products/{company}/toggle', [ProductAdminController::class, 'toggle'])->name('admin.products.toggle');

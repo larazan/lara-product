@@ -18,21 +18,22 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory(30)->create();
-        Contact::factory(40)->create();
-        Report::factory(20)->create();
-        Article::factory(30)->create();
+        // User::factory(30)->create();
+        // Contact::factory(40)->create();
+        // Report::factory(20)->create();
+        // Article::factory(30)->create();
 
         $this->call([
-            CompanySeeder::class,
-            BrandSeeder::class,
-            CountrySeeder::class,
-            FaqSeeder::class,
-            CategoryArticleSeeder::class,
-            CategorySeeder::class,
-            AttributeGroupSeeder::class,
-            AttributeSeeder::class,
-            SettingSeeder::class,
+            // CompanySeeder::class,
+            // BrandSeeder::class,
+            // CountrySeeder::class,
+            // FaqSeeder::class,
+            // CategoryArticleSeeder::class,
+            // CategorySeeder::class,
+            // AttributeGroupSeeder::class,
+            // AttributeSeeder::class,
+            // SettingSeeder::class,
+            CategoryAttributeSeeder::class,
         ]);
     }
 }

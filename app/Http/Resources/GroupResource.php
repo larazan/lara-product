@@ -24,6 +24,7 @@ class GroupResource extends JsonResource
             'order' => $this->order,
             'icon' => $this->icon,
             'score_weight' => $this->score_weight,
+            'category_id' => $this->category_id,
 
             // Nama kategori induk
             'category_name' => $this->category
