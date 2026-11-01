@@ -26,6 +26,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 
 class ProductController extends Controller
@@ -50,6 +52,7 @@ class ProductController extends Controller
         $categories = Category::orderBy('name', 'asc')->get();
         $countries = Country::orderBy('name', 'asc')->get();
         $companies = Company::orderBy('name', 'asc')->get();
+
 
         return Inertia::render('Admin/Product/Index', [
             'page' => $page,
@@ -77,8 +80,11 @@ class ProductController extends Controller
                 'parent_id' => $category->parent_id,
             ]);
 
+        $catParent = Category::orderBy('name', 'asc')->get();
+
         return Inertia::render('Admin/Product/Create', [
             'categories' => $categories,
+            'parentOption' => $catParent,
             'brands' => Brand::query()
                 ->where('is_active', true)
                 ->orderBy('name')
@@ -258,5 +264,95 @@ class ProductController extends Controller
         return response()->json([
             'data' => $attributes,
         ]);
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|array',
+            'parent_id' => 'nullable|exists:categories,id'
+        ]);
+
+        $category = new Category();
+        $category->setTranslations('name', $request->name);
+        // $category->name = $request->name;
+        $category->parent_id = $request->parentId ?? null;
+
+        // upload image
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $uniqueName = time() . '-' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+            // $image->move('image', $uniqueName);
+
+            // WebP
+            // Initialize Intervention Image Manager with the desired driver
+            // GD is usually a safe bet, ensure it's installed on your server
+            $manager = new ImageManager(new Driver());
+
+            // Read the uploaded image from its temporary path
+            $img = $manager->read($image->getRealPath());
+
+            // Generate a unique filename for the WebP image
+            $fileName = $uniqueName . '.webp';
+            // Encode the image to WebP format with desired quality (e.g., 80%)
+            $encodedImage = $img->toWebp(quality: 80);
+
+            // Define the storage path (e.g., 'public/uploads')
+            $filePath = 'uploads/categories/' . $fileName;
+
+            // Store the WebP image using Laravel's Storage facade
+            Storage::disk('public')->put($filePath, $encodedImage);
+
+            $category->image = $filePath;
+        }
+
+        $category->save();
+
+        return redirect()->route('admin.product.create')->with('success', 'Category created successfully.');
+    }
+
+    public function storeBrand(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|array',
+        ]);
+
+        $brand = new Brand();
+        $brand->company_id = $request->company_id;
+        $brand->name = $request->name;
+        $brand->description = $request->description;
+        $brand->website = $request->website;
+
+        // upload image
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $uniqueName = time() . '-' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+            // $image->move('image', $uniqueName);
+
+            // WebP
+            // Initialize Intervention Image Manager with the desired driver
+            // GD is usually a safe bet, ensure it's installed on your server
+            $manager = new ImageManager(new Driver());
+
+            // Read the uploaded image from its temporary path
+            $img = $manager->read($image->getRealPath());
+
+            // Generate a unique filename for the WebP image
+            $fileName = $uniqueName . '.webp';
+            // Encode the image to WebP format with desired quality (e.g., 80%)
+            $encodedImage = $img->toWebp(quality: 80);
+
+            // Define the storage path (e.g., 'public/uploads')
+            $filePath = 'uploads/categories/' . $fileName;
+
+            // Store the WebP image using Laravel's Storage facade
+            Storage::disk('public')->put($filePath, $encodedImage);
+
+            $brand->logo = $filePath;
+        }
+
+        $brand->save();
+
+        return redirect()->route('admin.product.create')->with('success', 'Brand created successfully.');
     }
 }

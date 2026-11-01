@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Brand;
+use App\Models\Company;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,6 +23,7 @@ class BrandController extends Controller
         $brands = Brand::when($request->q, function ($query, $q) {
             $query->where('name', 'like', '%' . $q . '%');
         })
+            ->with('company:id,name')
             // ->when(request('sort'), function ($q) {
             //     $direction = request('direction', 'asc');
             //     $q->orderBy(request('sort'), $direction);
@@ -29,9 +31,14 @@ class BrandController extends Controller
             ->paginate($page)
             ->withQueryString();
 
+
         return Inertia::render('Admin/Brand/Index', [
             'page' => $page,
             'brands' => $brands,
+            'companies' => Company::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
         ]);
@@ -44,6 +51,7 @@ class BrandController extends Controller
         ]);
 
         $brand = new Brand();
+        $brand->company_id = $request->company_id;
         $brand->name = $request->name;
         $brand->description = $request->description;
         $brand->website = $request->website;
@@ -68,7 +76,7 @@ class BrandController extends Controller
             $encodedImage = $img->toWebp(quality: 80);
 
             // Define the storage path (e.g., 'public/uploads')
-            $filePath = 'uploads/categories/' . $fileName;
+            $filePath = 'uploads/brands/' . $fileName;
 
             // Store the WebP image using Laravel's Storage facade
             Storage::disk('public')->put($filePath, $encodedImage);
@@ -89,7 +97,7 @@ class BrandController extends Controller
         ]);
 
         $brand = Brand::findOrFail($id);
-
+        $brand->company_id = $request->company_id;
         $brand->name = $request->name;
         $brand->description = $request->description;
         $brand->website = $request->website;

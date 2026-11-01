@@ -111,7 +111,6 @@ const closeModal = () => {
 }
 
 // open edit modal
-// open edit modal
 const openEditModal = (category) => {
     showEditModal.value = true;
     idCategory.value = category.id;
@@ -263,7 +262,7 @@ const deleteSelected = () => {
 
     if (!confirm(`Delete ${selected.value.length} items?`)) return
 
-    router.delete(route('admin.category.bulk-delete'), {
+    router.delete(route('admin.categories.bulk-delete'), {
         data: { ids: selected.value },
         preserveScroll: true,
         onSuccess: () => {
@@ -446,7 +445,7 @@ const deleteSelected = () => {
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-white">
                                         <ToggleSwitch v-model="category.is_active" field="is_active"
-                                            :update-url="route('admin.category.toggle', category.id)" confirm
+                                            :update-url="route('admin.categories.toggle', category.id)" confirm
                                             success-message="Category active updated" />
 
                                     </td>

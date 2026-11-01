@@ -199,6 +199,12 @@ onBeforeUnmount(() => {
                         <div class="text-sm font-semibold text-gray-800">
                             {{ getDisplayText(item) }}
                         </div>
+                        <div v-if="item.group" class="text-[10px] text-gray-400">
+                            Group: {{ getDisplayText(item.group) }}
+                        </div>
+                        <div v-if="item.score_weight" class="text-[10px] text-gray-400">
+                            Weight: {{ item.score_weight }} | Icon: {{ item.icon }}
+                        </div>
                     </slot>
                 </li>
 

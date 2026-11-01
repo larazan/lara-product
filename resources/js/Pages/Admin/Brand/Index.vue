@@ -9,10 +9,15 @@ import PaginationMod from '../Components/PaginationMod.vue';
 import ImageUploadMod from '../Components/ImageUploadMod.vue';
 import MyEditor from '../Components/MyEditor.vue';
 import { limitWords } from '@/Utils/text.js'
+import SearchDropdownSelect from '../Components/SearchDropdownSelect.vue';
 
 const props = defineProps({
     page: Number,
     brands: Object,
+    companies: {
+        type: Array,
+        default: () => [],
+    },
     search: Object,
     locales: Array,
 });
@@ -27,6 +32,7 @@ const resetForm = () => {
 }
 
 const formBrand = useForm({
+    company_id: null,
     name: "",
     description: "",
     website: "",
@@ -52,6 +58,7 @@ const openEditModal = (brand) => {
     showEditModal.value = true;
     idBrand.value = brand.id;
 
+    formBrand.company_id = brand.company_id;
     formBrand.name = brand.name;
     formBrand.description = brand.description;
     formBrand.website = brand.website;
@@ -174,7 +181,7 @@ const deleteSelected = () => {
 
     if (!confirm(`Delete ${selected.value.length} items?`)) return
 
-    router.delete(route('admin.brand.bulk-delete'), {
+    router.delete(route('admin.brands.bulk-delete'), {
         data: { ids: selected.value },
         preserveScroll: true,
         onSuccess: () => {
@@ -197,6 +204,7 @@ const deleteSelected = () => {
             <div class="w-full mb-1">
                 <div class="mb-4">
                     <!-- breadcrumb -->
+                    <!-- <pre>{{ props.brands }}</pre> -->
 
                     <!-- end breadcrumb -->
                     <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">All brands</h1>
@@ -297,7 +305,7 @@ const deleteSelected = () => {
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Description
+                                        Company
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
@@ -351,7 +359,7 @@ const deleteSelected = () => {
                                         </div>
                                     </td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
-                                        {{ limitWords(brand.description, 10) }}</td>
+                                        {{ brand.company.name }}</td>
                                     <td
                                         class="max-w-sm p-4 overflow-hidden text-sm font-semibold text-gray-700 truncate xl:max-w-xs dark:text-gray-400">
                                         {{ brand.slug }}</td>
@@ -432,6 +440,13 @@ const deleteSelected = () => {
                                         placeholder="" required>
                                 </div>
                                 <div class="col-span-6 sm:col-span-3">
+                                    <label
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Perusahaan</label>
+                                    <SearchDropdownSelect v-model="formBrand.company_id" :items="companies"
+                                        value-key="id" label-key="name" locale="id" placeholder="Pilih perusahaan..."
+                                        search-placeholder="Cari perusahaan..." />
+                                </div>
+                                <div class="col-span-6">
                                     <label for="website"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Website
@@ -506,6 +521,13 @@ const deleteSelected = () => {
                                         placeholder="" required>
                                 </div>
                                 <div class="col-span-6 sm:col-span-3">
+                                    <label
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Perusahaan</label>
+                                    <SearchDropdownSelect v-model="formBrand.company_id" :items="companies"
+                                        value-key="id" label-key="name" locale="id" placeholder="Pilih perusahaan..."
+                                        search-placeholder="Cari perusahaan..." />
+                                </div>
+                                <div class="col-span-6">
                                     <label for="website"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                                         Website

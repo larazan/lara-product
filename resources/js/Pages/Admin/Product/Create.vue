@@ -29,6 +29,7 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    parentOption: Object,
     brands: {
         type: Array,
         default: () => [],
@@ -66,6 +67,12 @@ const form = useForm({
     country_id: null,
     description: '',
     year: null,
+    model_number: null,
+    meta_title: '',
+    meta_description: '',
+    metadata: '',
+    is_featured: null,
+    is_active: null,
 
     // Tahap 2
     attributes: {},
@@ -163,8 +170,9 @@ function submit() {
                 </div>
 
                 <!-- Tahap 1: Informasi Dasar -->
-                <BasicInfoStep v-if="currentStep === 1" :form="form" :categories="categories" :brands="brands"
-                    :companies="companies" :countries="countries" :locales="locales" />
+                <BasicInfoStep v-if="currentStep === 1" :form="form" :categories="categories"
+                    :parent-option="parentOption" :brands="brands" :companies="companies" :countries="countries"
+                    :locales="locales" />
 
                 <!-- Tahap 2: Spesifikasi / Attributes -->
                 <ProductAttributesStep v-else-if="currentStep === 2" :form="form" :category-id="form.category_id" />

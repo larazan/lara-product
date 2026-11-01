@@ -705,14 +705,9 @@ const deleteSelected = () => {
                                         </option>
                                     </select> -->
 
-                                    <SearchDropdown v-model="formGroup.categoryId" :items="props.categories"
-                                        value-key="id" placeholder="Choose a category..."
-                                        search-placeholder="Search categories...">
-                                        <template #item="{ item }">
-                                            <div class="text-sm font-semibold text-green-700">{{ categoryName(item) }}
-                                            </div>
-                                        </template>
-                                    </SearchDropdown>
+                                    <SearchDropdownSelect v-model="formGroup.categoryId" :items="categories"
+                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        placeholder="Pilih kategori..." search-placeholder="Cari kategori..." />
 
                                     <p v-if="formGroup.errors.categoryId" class="mt-1 text-sm text-red-600">
                                         {{ formGroup.errors.categoryId }}

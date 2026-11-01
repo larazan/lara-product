@@ -127,7 +127,7 @@ class CompanyController extends Controller
             $encodedImage = $img->toWebp(quality: 80);
 
             // Define the storage path (e.g., 'public/uploads')
-            $filePath = 'uploads/categories/' . $fileName;
+            $filePath = 'uploads/companies/' . $fileName;
 
             // Store the WebP image using Laravel's Storage facade
             Storage::disk('public')->put($filePath, $encodedImage);

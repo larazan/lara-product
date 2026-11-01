@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\CompanyController as CompanyAdminController;
 use App\Http\Controllers\Admin\ContactController as ContactAdminController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController as FaqAdminController;
+use App\Http\Controllers\Admin\IngredientController;
 use App\Http\Controllers\Admin\ProductController as ProductAdminController;
 use App\Http\Controllers\Admin\ReportController as ReportAdminController;
 use App\Http\Controllers\Admin\SettingController as SettingAdminController;
@@ -115,7 +116,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // company
     Route::get('/companies', [CompanyAdminController::class, 'index'])->name('admin.companies.index');
-    Route::post('/companies/create', [CompanyAdminController::class, 'store'])->name('admin.companies.create');
+    Route::post('/company/create', [CompanyAdminController::class, 'store'])->name('admin.companies.create');
     Route::put('/company/update/{id}', [CompanyAdminController::class, 'update'])->name('admin.company.update');
     Route::delete('/company/delete/{id}', [CompanyAdminController::class, 'destroy'])->name('admin.company.destroy');
     Route::put('/companies/{company}/toggle', [CompanyAdminController::class, 'toggle'])->name('admin.companies.toggle');
@@ -137,10 +138,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/contact/delete/{id}', [ContactAdminController::class, 'destroy'])->name('admin.contact.destroy');
     Route::delete('/contacts/bulk-delete', [ContactAdminController::class, 'bulkDelete'])->name('admin.contact.bulk-delete');
 
+    // ingredient
+    Route::get('/ingredients', [IngredientController::class, 'index'])->name('admin.ingredients.index');
+    Route::post('/ingredient/create', [IngredientController::class, 'store'])->name('admin.ingredients.create');
+    Route::put('/ingredient/update/{id}', [IngredientController::class, 'update'])->name('admin.ingredient.update');
+    Route::delete('/ingredient/delete/{id}', [IngredientController::class, 'destroy'])->name('admin.ingredient.destroy');
+    Route::put('/ingredients/{ingredient}/toggle', [IngredientController::class, 'toggle'])->name('admin.ingredients.toggle');
+    Route::delete('/ingredient/bulk-delete', [IngredientController::class, 'bulkDelete'])->name('admin.ingredients.bulk-delete');
+
     // product
     Route::get('/products', [ProductAdminController::class, 'index'])->name('admin.products.index');
     Route::get('/product/create', [ProductAdminController::class, 'create'])->name('admin.product.create');
     Route::post('/product/store', [ProductAdminController::class, 'store'])->name('admin.product.store');
+    Route::post('/product/store-brand', [ProductAdminController::class, 'storeBrand'])->name('admin.product.store-brand');
+    Route::post('/product/store-category', [ProductAdminController::class, 'storeCategory'])->name('admin.product.store-category');
     Route::put('/product/update/{id}', [ProductAdminController::class, 'update'])->name('admin.product.update');
     Route::delete('/product/delete/{id}', [ProductAdminController::class, 'destroy'])->name('admin.product.destroy');
     Route::put('/products/{company}/toggle', [ProductAdminController::class, 'toggle'])->name('admin.products.toggle');

@@ -1,6 +1,7 @@
 <script setup>
 import Navbar from '@/Pages/Admin/Components/Navbar.vue';
 import Sidebar from '@/Pages/Admin/Components/Sidebar.vue';
+import ScrollToTop from '@/Components/ScrollToTop.vue';
 
 import { onMounted } from 'vue'
 import { initFlowbite } from 'flowbite'
@@ -44,7 +45,7 @@ onMounted(() => {
     if (
         localStorage.getItem('color-theme') === 'dark' ||
         (!('color-theme' in localStorage) &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches)
+            window.matchMedia('(prefers-color-scheme: dark)').matches)
     ) {
         themeToggleLightIcon?.classList.remove('hidden');
     } else {
@@ -86,12 +87,14 @@ onMounted(() => {
         <Navbar />
         <div class="flex pt-16 overflow-hidden bg-gray-50 dark:bg-gray-900">
             <Sidebar />
-            <div id="main-content" class="relative w-full h-full overflow-x-hidden overflow-y-auto bg-gray-50 lg:ml-64 dark:bg-gray-900">
+            <div id="main-content"
+                class="relative w-full h-full overflow-x-hidden overflow-y-auto bg-gray-50 lg:ml-64 dark:bg-gray-900">
                 <main>
 
                     <slot />
                 </main>
             </div>
         </div>
+        <ScrollToTop />
     </div>
 </template>

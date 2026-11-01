@@ -51,7 +51,7 @@ class CategoryAttributeController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return Inertia::render('Admin/CategoryAttribute/IndexTwo', [
+        return Inertia::render('Admin/CategoryAttribute/Index', [
             'categoryAttributes' => $categoryAttributes,
             'categories' => Category::query()
                 ->select('id', 'name')
@@ -59,7 +59,7 @@ class CategoryAttributeController extends Controller
                 ->get(),
             'attributes' => Attribute::query()
                 ->with([
-                    'attributeGroup:id,name',
+                    'group:id,name',
                 ])
                 ->orderBy('name')
                 ->get(),

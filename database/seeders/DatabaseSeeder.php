@@ -33,7 +33,8 @@ class DatabaseSeeder extends Seeder
             // AttributeGroupSeeder::class,
             // AttributeSeeder::class,
             // SettingSeeder::class,
-            CategoryAttributeSeeder::class,
+            // CategoryAttributeSeeder::class,
+            IngredientSeeder::class,
         ]);
     }
 }

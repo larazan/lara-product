@@ -600,7 +600,7 @@ const deleteSelected = () => {
                                             <div class="flex flex-col">
                                                 <p>{{ attribute.label }}</p>
                                                 <span class="text-gray-500 text-xs font-semibold">{{ attribute.name
-                                                    }}</span>
+                                                }}</span>
                                             </div>
 
                                         </div>
@@ -1057,10 +1057,15 @@ const deleteSelected = () => {
 
                                 <!-- Group -->
                                 <div class="col-span-6 sm:col-span-3">
-                                    <label for="group"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Group
-                                    </label>
+                                    <div class="flex flex-row justify-between items-center">
+                                        <label for="group"
+                                            class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                            Group
+                                        </label>
+                                        <button
+                                            class="flex justify-center px-1.5  rounded bg-indigo-600 hover:bg-indigo-700 text-sm text-white font-semibold">+
+                                        </button>
+                                    </div>
 
                                     <!-- <select id="group" v-model="formAttribute.group_id"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
