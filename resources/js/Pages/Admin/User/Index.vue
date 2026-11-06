@@ -1,18 +1,18 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Modal from '@/Components/Modal.vue';
-import Pagination from '../Components/Pagination.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import { ref, reactive, watch, computed } from 'vue';
-import { router, Head } from '@inertiajs/vue3';
 import PaginationMod from '../Components/PaginationMod.vue';
+import { ref, reactive, watch, computed } from 'vue';
+import { router, Head, useForm } from '@inertiajs/vue3';
 import { formatUS } from '@/Utils/text';
 import RoleSelect from '../Components/RoleSelect.vue';
 
 const props = defineProps({
     page: Number,
     users: Object,
-    search: Object
+    search: Object,
+    roles: Array,          // Daftar semua role yang tersedia dari backend
+    permissions: Array     // Daftar semua permission yang tersedia dari backend
 });
 
 const formUser = reactive({
@@ -38,10 +38,53 @@ const showEditModal = ref(false);
 const showCreateModal = ref(false);
 const showDeleteModal = ref(false);
 
+// State baru untuk Modal Manage Roles & Permissions
+const showRoleModal = ref(false);
+const managingUser = ref(null);
+
+const roleForm = useForm({
+    roles: [],
+    permissions: [],
+});
+
+const openRoleModal = (user) => {
+    managingUser.value = user;
+    // Asumsi relasi user membawa data roles dan permissions (e.g. User::with(['roles', 'permissions']))
+    roleForm.roles = user.roles ? user.roles.map(r => r.name) : [];
+    roleForm.permissions = user.permissions ? user.permissions.map(p => p.name) : [];
+    showRoleModal.value = true;
+};
+
+const closeRoleModal = () => {
+    showRoleModal.value = false;
+    managingUser.value = null;
+    roleForm.reset();
+    roleForm.clearErrors();
+};
+
+const updateRolesAndPermissions = () => {
+    if (!managingUser.value) return;
+
+    roleForm.put(route('admin.users.update-roles', managingUser.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            Swal.fire({
+                toast: true,
+                icon: 'success',
+                position: 'top-end',
+                showConfirmButton: false,
+                title: 'Role & permissions updated successfully.'
+            });
+            closeRoleModal();
+        }
+    });
+};
+
 const closeModal = () => {
     if (showEditModal.value) showEditModal.value = false;
     if (showCreateModal.value) showCreateModal.value = false;
     if (showDeleteModal.value) showDeleteModal.value = false;
+    if (showRoleModal.value) closeRoleModal();
 }
 
 // open edit modal
@@ -79,15 +122,14 @@ const updateUser = async () => {
 // open add modal
 const openAddModal = () => {
     resetForm();
-
     showCreateModal.value = true;
 }
 
 // add method
 const addUser = async () => {
     try {
-       await router.post('/admin/user/create', formUser, {
-        onSuccess: page => {
+        await router.post('/admin/user/create', formUser, {
+            onSuccess: page => {
                 Swal.fire({
                     toast: true,
                     icon: 'success',
@@ -98,12 +140,10 @@ const addUser = async () => {
                 closeModal();
                 resetForm();
             },
-       });
-        
+        });
     } catch (error) {
         console.log(error);
     }
-
 }
 
 // open delete modal
@@ -115,8 +155,8 @@ const openDeleteModal = (id) => {
 // delete method
 const deleteUser = async () => {
     try {
-       await router.delete('/admin/user/delete/' + idDeleteUser.value, {
-        onSuccess: page => {
+        await router.delete('/admin/user/delete/' + idDeleteUser.value, {
+            onSuccess: page => {
                 Swal.fire({
                     toast: true,
                     icon: 'success',
@@ -127,11 +167,10 @@ const deleteUser = async () => {
                 closeModal();
                 resetForm();
             },
-       });        
+        });
     } catch (error) {
         console.log(error);
     }
-
 }
 
 // search
@@ -144,45 +183,56 @@ watch(search, (value) => {
 // delete selected
 const selected = ref([])
 
-// Select all logic
 const allSelected = computed(() => {
-  if (!props.users?.data) return false
+    if (!props.users?.data) return false
 
-  return (
-    props.users.data.length > 0 &&
-    selected.value.length === props.users.data.length
-  )
+    return (
+        props.users.data.length > 0 &&
+        selected.value.length === props.users.data.length
+    )
 })
 
-
 const toggleAll = (e) => {
-  if (!props.users?.data) return
+    if (!props.users?.data) return
 
-  selected.value = e.target.checked
-    ? props.users.data.map(r => r.id)
-    : []
+    selected.value = e.target.checked
+        ? props.users.data.map(r => r.id)
+        : []
 }
 
-// Delete selected
 const deleteSelected = () => {
-  if (!selected.value.length) return
+    if (!selected.value.length) return
 
-  if (!confirm(`Delete ${selected.value.length} items?`)) return
+    if (!confirm(`Delete ${selected.value.length} items?`)) return
 
-  router.delete(route('admin.user.bulk-delete'), {
-    data: { ids: selected.value },
-    preserveScroll: true,
-    onSuccess: () => {
-      selected.value = []
-    },
-  })
+    router.delete(route('admin.user.bulk-delete'), {
+        data: { ids: selected.value },
+        preserveScroll: true,
+        onSuccess: () => {
+            selected.value = []
+        },
+    })
 }
+
+// Tambahkan fungsi ini di dalam script setup Anda
+const handleRoleChange = (selectedRoleName) => {
+    // Cari data role berdasarkan nama yang dipilih dari props.roles
+    const foundRole = props.roles.find(r => r.name === selectedRoleName);
+
+    if (foundRole && foundRole.permissions) {
+        // Ambil semua nama permission dari role tersebut dan masukkan ke form permissions
+        roleForm.permissions = foundRole.permissions.map(p => p.name);
+    } else {
+        roleForm.permissions = [];
+    }
+};
 
 </script>
 
 <template>
 
     <AdminLayout>
+
         <Head>
             <title>Users</title>
         </Head>
@@ -191,7 +241,8 @@ const deleteSelected = () => {
             <div class="w-full mb-1">
                 <!-- breadcrumb -->
                 <div class="mb-4">
-                   
+                    <!-- <pre>{{ props.users }}</pre> -->
+                    <!-- <pre>{{ props.roles }}</pre> -->
                     <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">All users</h1>
                 </div>
                 <!-- end breadcrumb -->
@@ -216,9 +267,7 @@ const deleteSelected = () => {
                                         clip-rule="evenodd"></path>
                                 </svg>
                             </a>
-                            <button
-                                @click="deleteSelected"
-                                :disabled="!selected.length"
+                            <button @click="deleteSelected" :disabled="!selected.length"
                                 class="inline-flex justify-center p-1 text-gray-500 rounded cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"
                                     xmlns="http://www.w3.org/2000/svg">
@@ -247,7 +296,7 @@ const deleteSelected = () => {
                             </a>
                         </div>
                     </div>
-                    <div class="flex items-center ml-auto space-x-2 sm:space-x-3">
+                    <div class="hidden flex2 items-center ml-auto space-x-2 sm:space-x-3">
                         <button @click="openAddModal" type="button"
                             class="inline-flex items-center justify-center w-1/2 px-3 py-2 text-sm font-medium text-center text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 sm:w-auto dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                             <svg class="w-5 h-5 mr-2 -ml-1" fill="currentColor" viewBox="0 0 20 20"
@@ -281,8 +330,8 @@ const deleteSelected = () => {
                                 <tr>
                                     <th scope="col" class="p-4">
                                         <div class="flex items-center">
-                                            <input :checked="allSelected"
-                                            @change="toggleAll" id="checkbox-all"  type="checkbox"
+                                            <input :checked="allSelected" @change="toggleAll" id="checkbox-all"
+                                                type="checkbox"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
                                             <label for="checkbox-all" class="sr-only">checkbox</label>
                                         </div>
@@ -291,7 +340,7 @@ const deleteSelected = () => {
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
                                         Name
                                     </th>
-                                   
+
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
                                         Role
@@ -316,20 +365,18 @@ const deleteSelected = () => {
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
 
-                                <tr v-for="(user,index) in props.users.data" :key="user.id"
+                                <tr v-for="(user, index) in props.users.data" :key="user.id"
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700">
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
-                                            <input  
-                                                :id="`checkbox-${user.id}`"
-                                                :value="user.id"
-                                                v-model="selected"
+                                            <input :id="`checkbox-${user.id}`" :value="user.id" v-model="selected"
                                                 type="checkbox"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
-                                                <label :for="`checkbox-${user.id}`" class="sr-only">checkbox</label>
+                                            <label :for="`checkbox-${user.id}`" class="sr-only">checkbox</label>
                                             <label for="checkbox-1" class="sr-only">checkbox</label>
                                             <div class="px-2 text-sm font-semibold text-gray-600">
-                                            {{ ((props.users.current_page - 1) * props.users.per_page) + index + 1 }}
+                                                {{ ((props.users.current_page - 1) * props.users.per_page) + index + 1
+                                                }}
                                             </div>
                                         </div>
                                     </td>
@@ -349,15 +396,15 @@ const deleteSelected = () => {
                                                 user.email }}</div>
                                         </div>
                                     </td>
-                                    
+
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {{ user.role }}</td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        <RoleSelect :user="user" /></td>    
-                                    <td
-                                        class="p-4 text-xs font-medium text-gray-500 whitespace-nowrap dark:text-white">
+                                        <RoleSelect :user="user" />
+                                    </td>
+                                    <td class="p-4 text-xs font-medium text-gray-500 whitespace-nowrap dark:text-white">
                                         {{ formatUS(user.created_at) }}</td>
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-white">
@@ -366,6 +413,11 @@ const deleteSelected = () => {
                                         </div>
                                     </td>
                                     <td class="p-4 space-x-2 whitespace-nowrap">
+                                        <!-- Tombol untuk membuka Modal Manage Roles -->
+                                        <button @click="openRoleModal(user)" type="button"
+                                            class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white rounded-lg bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300">
+                                            Roles / Perms
+                                        </button>
                                         <button @click="openEditModal(user)" type="button"
                                             class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"
@@ -399,7 +451,7 @@ const deleteSelected = () => {
             </div>
         </div>
 
-            <PaginationMod :meta="props.users" :query="{ search: search }" :limit="props.page" />
+        <PaginationMod :meta="props.users" :query="{ search: search }" :limit="props.page" />
 
         <!-- Edit User Modal -->
         <Modal :show="showEditModal" maxWidth="xl">
@@ -455,26 +507,6 @@ const deleteSelected = () => {
                                         class="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                         placeholder="username" disabled readonly>
                                 </div>
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="countries"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
-                                    <select v-model="formUser.role"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                        <option selected>Choose a role</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="general">General</option>
-                                        <option value="FR">France</option>
-                                    </select>
-                                </div>
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="current-password"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                                    <input type="password" name="current-password" value="••••••••"
-                                        id="current-password"
-                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        placeholder="••••••••" required>
-                                </div>
-
 
                             </div>
                         </div>
@@ -505,8 +537,7 @@ const deleteSelected = () => {
                             Add new user
                         </h3>
                         <button @click="closeModal" type="button"
-                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white"
-                        >
+                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white">
                             <svg class="w-5 h-5" fill="currentColor" view-box="0 0 20 20"
                                 xmlns="http://www.w3.org/2000/svg">
                                 <path fill-rule="evenodd"
@@ -523,7 +554,7 @@ const deleteSelected = () => {
                                     <label for="first-name"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">First
                                         Name</label>
-                                    <input type="text" v-model="firstName" name="first-name" id="first-name"
+                                    <input type="text" v-model="formUser.firstName" name="first-name" id="first-name"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="Bonnie" required>
                                 </div>
@@ -531,24 +562,25 @@ const deleteSelected = () => {
                                     <label for="last-name"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Last
                                         Name</label>
-                                    <input type="text" v-model="lastName" name="last-name" id="last-name"
+                                    <input type="text" v-model="formUser.lastName" name="last-name" id="last-name"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="Green" required>
                                 </div>
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="email"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                                    <input type="email" v-model="email" name="email" id="email"
+                                    <input type="email" v-model="formUser.email" name="email" id="email"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="example@company.com" required>
                                 </div>
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="username"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
-                                    <input type="text" v-model="username" name="username" id="username"
+                                    <input type="text" v-model="formUser.userName" name="username" id="username"
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="e.g. React developer" required>
                                 </div>
+
 
                             </div>
                         </div>
@@ -576,8 +608,7 @@ const deleteSelected = () => {
                         <!-- Modal header -->
                         <div class="flex justify-end p-2">
                             <button @click="closeModal()" type="button"
-                                class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white"
-                            >
+                                class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white">
                                 <svg class="w-5 h-5" fill="currentColor" view-box="0 0 20 20"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd"
@@ -610,6 +641,89 @@ const deleteSelected = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+        </Modal>
+
+        <!-- ======================================================= -->
+        <!-- MODAL MANAGE ROLES & PERMISSIONS (Menggunakan Checkbox) -->
+        <!-- ======================================================= -->
+        <Modal :show="showRoleModal" maxWidth="lg">
+            <div class="relative bg-white rounded-lg shadow dark:bg-gray-800 p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between pb-4 border-b dark:border-gray-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-green-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="currentColor">
+                                <path
+                                    d="M20.822 18.096c-3.439-.794-6.641-1.49-5.09-4.418 4.719-8.912 1.251-13.678-3.732-13.678-5.081 0-8.464 4.949-3.732 13.678 1.597 2.945-1.725 3.641-5.09 4.418-2.979.688-3.178 2.143-3.178 4.663l.005 1.241h10.483l.704-3h1.615l.704 3h10.483l.005-1.241c.001-2.52-.198-3.975-3.177-4.663zm-8.231 1.904h-1.164l-.91-2h2.994l-.92 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-300" id="modal-title">
+                            Manage Roles / Permissions for {{ managingUser ? managingUser.first_name + ' ' +
+                                managingUser.last_name : '' }}
+                        </h3>
+                    </div>
+                    <button @click="closeRoleModal" type="button"
+                        class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 dark:hover:bg-gray-700 dark:hover:text-white">
+                        ✕
+                    </button>
+                </div>
+
+                <form @submit.prevent="updateRolesAndPermissions" class="mt-4 space-y-6">
+                    <!-- Attach Roles Section (Radio Button) -->
+                    <div>
+                        <label
+                            class="block uppercase tracking-wide text-gray-700 dark:text-gray-300 text-xs font-bold mb-2">
+                            Attach Roles
+                        </label>
+                        <div
+                            class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+                            <label v-for="role in props.roles" :key="role.id"
+                                class="flex items-center space-x-2 text-sm cursor-pointer p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition">
+                                <!-- Tambahkan @change untuk memicu fungsi otomatis pencentangan permission -->
+                                <input type="radio" :value="role.name" v-model="roleForm.roles"
+                                    @change="handleRoleChange(role.name)"
+                                    class="rounded-full border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800" />
+                                <span class="text-gray-700 dark:text-gray-200 font-medium">{{ role.name }}</span>
+                            </label>
+                        </div>
+                        <div v-if="roleForm.errors.roles" class="text-red-500 text-xs mt-1">{{ roleForm.errors.roles }}
+                        </div>
+                    </div>
+
+                    <!-- Attach Direct Permissions Section (Checkbox List) -->
+                    <div>
+                        <label
+                            class="block uppercase tracking-wide text-gray-700 dark:text-gray-300 text-xs font-bold mb-2">
+                            Attach Direct Permissions
+                        </label>
+                        <div
+                            class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+                            <label v-for="permission in props.permissions" :key="permission.id"
+                                class="flex items-center space-x-2 text-xs cursor-pointer p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition">
+                                <input type="checkbox" :value="permission.name" v-model="roleForm.permissions"
+                                    class="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800" />
+                                <span class="text-gray-600 dark:text-gray-300">{{ permission.name }}</span>
+                            </label>
+                        </div>
+                        <p class="text-gray-600 text-xs italic dark:text-gray-400 mt-2">Use this to directly assign
+                            permissions to the user.</p>
+                        <div v-if="roleForm.errors.permissions" class="text-red-500 text-xs mt-1">{{
+                            roleForm.errors.permissions }}</div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex flex-wrap justify-end space-x-2 pt-4 border-t dark:border-gray-700">
+                        <button type="button" @click="closeRoleModal"
+                            class="inline-flex justify-center rounded-md border dark:bg-gray-700 dark:text-gray-200 border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                        <button type="submit" :disabled="roleForm.processing"
+                            class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 disabled:opacity-50">
+                            {{ roleForm.processing ? 'Saving...' : 'Save' }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </Modal>
 

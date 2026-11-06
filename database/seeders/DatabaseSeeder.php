@@ -34,7 +34,8 @@ class DatabaseSeeder extends Seeder
             // AttributeSeeder::class,
             // SettingSeeder::class,
             // CategoryAttributeSeeder::class,
-            IngredientSeeder::class,
+            // NewIngredientSeeder::class,
+            RoleSeeder::class,
         ]);
     }
 }

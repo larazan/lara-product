@@ -9,6 +9,7 @@ use Inertia\Inertia;
 
 class IngredientController extends Controller
 {
+    protected array $locales = ['en', 'id'];
     //
     public function index(Request $request)
     {
@@ -96,5 +97,77 @@ class IngredientController extends Controller
         Ingredient::whereIn('id', $request->ids)->delete();
 
         return back()->with('success', 'Selected items deleted.');
+    }
+
+    /**
+     * Store a new ingredient.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'array'],
+            'name.en' => ['required', 'string', 'max:150'],
+            'name.id' => ['required', 'string', 'max:150'],
+
+            'inci_name' => ['nullable', 'string', 'max:150'],
+
+            'safety_rating' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:5',
+            ],
+
+            'description' => ['nullable', 'array'],
+            'description.en' => ['nullable', 'string'],
+            'description.id' => ['nullable', 'string'],
+        ]);
+
+        Ingredient::create([
+            'name' => $validated['name'],
+            'inci_name' => $validated['inci_name'] ?? null,
+            'safety_rating' => $validated['safety_rating'] ?? null,
+            'description' => $validated['description'] ?? [],
+        ]);
+
+        return redirect()
+            ->route('admin.ingredients.index')
+            ->with('success', 'Ingredient created successfully.');
+    }
+
+    /**
+     * Update an existing ingredient.
+     */
+    public function update(Request $request, Ingredient $ingredient)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'array'],
+            'name.en' => ['required', 'string', 'max:150'],
+            'name.id' => ['required', 'string', 'max:150'],
+
+            'inci_name' => ['nullable', 'string', 'max:150'],
+
+            'safety_rating' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:5',
+            ],
+
+            'description' => ['nullable', 'array'],
+            'description.en' => ['nullable', 'string'],
+            'description.id' => ['nullable', 'string'],
+        ]);
+
+        $ingredient->update([
+            'name' => $validated['name'],
+            'inci_name' => $validated['inci_name'] ?? null,
+            'safety_rating' => $validated['safety_rating'] ?? null,
+            'description' => $validated['description'] ?? [],
+        ]);
+
+        return redirect()
+            ->route('admin.ingredients.index')
+            ->with('success', 'Ingredient updated successfully.');
     }
 }

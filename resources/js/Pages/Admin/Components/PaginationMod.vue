@@ -50,8 +50,9 @@ const changePage = (page) => {
 </script>
 
 <template>
-  
-  <div v-if="meta && meta.last_page > 1" class="sticky bottom-0 right-0 items-center w-full p-4 bg-white border-t border-gray-200 sm:flex sm:justify-between dark:bg-gray-800 dark:border-gray-700">
+
+  <div v-if="meta && meta.last_page > 1"
+    class="sticky bottom-0 right-0 items-center w-full p-4 bg-white border-t border-gray-200 sm:flex sm:justify-between dark:bg-gray-800 dark:border-gray-700">
     <!--  -->
     <div class="flex items-center mb-4 sm:mb-0">
       <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Showing <span
@@ -59,75 +60,61 @@ const changePage = (page) => {
           class="font-semibold text-gray-900 dark:text-white">{{ meta.total }}</span></span>
     </div>
     <!--  -->
-    <nav  aria-label="Page navigation example">
+    <nav aria-label="Page navigation example">
       <ul class="flex items-center -space-x-px h-8 text-sm">
         <li>
-          <button 
-            @click="changePage(1)"
-            :disabled="meta.current_page === 1"
-            class="flex items-center justify-center px-3 h-8 leading-tight disabled:opacity-70 disabled:hover:bg-white disabled:hover:text-gray-500 text-gray-500 bg-white border border-gray-300 hover:bg-primary-400 hover:text-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-          >
-          «
+          <button @click="changePage(1)" :disabled="meta.current_page === 1" class="page-button rounded-l-lg">
+            «
           </button>
         </li>
         <li>
-          <button 
-            @click="changePage(meta.current_page - 1)"
-            :disabled="meta.current_page === 1"
-            class="flex items-center justify-center px-3 h-8 leading-tight disabled:opacity-70 disabled:hover:bg-white disabled:hover:text-gray-500 text-gray-500 bg-white border border-gray-300 hover:bg-primary-400 hover:text-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-          >
-          ‹
+          <button @click="changePage(meta.current_page - 1)" :disabled="meta.current_page === 1" class="page-button">
+            ‹
           </button>
         </li>
 
         <template v-for="(page, index) in pagesWithEllipsis" :key="index">
-          <span
-            v-if="page === '...'"
-            class="px-3 py-1 text-gray-400 select-none"
-          >...</span>
+          <span v-if="page === '...'" class="px-3 py-1 text-gray-400 select-none">...</span>
 
           <li v-else>
-          <button 
-            @click="changePage(page)"
-            :class="{ '!bg-primary-400 text-white hover:text-white hover:cursor-text hover:bg-primary-400': meta.current_page === page }"
-            class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-primary-400 hover:text-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-          >
-          {{ page }}
-          </button>
-        </li>
+            <button @click="changePage(page)"
+              :class="{ '!bg-white !text-teal-500 hover:text-white hover:cursor-text hover:bg-primary-400': meta.current_page === page }"
+              class="page-button">
+              {{ page }}
+            </button>
+          </li>
 
         </template>
 
 
         <li>
-          <button 
-             @click="changePage(meta.current_page + 1)"
-            :disabled="meta.current_page === meta.last_page"
-           class="flex items-center justify-center px-3 h-8 leading-tight disabled:opacity-70 disabled:hover:bg-white disabled:hover:text-gray-500 text-gray-500 bg-white border border-gray-300 hover:bg-primary-400 hover:text-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-          >
-          ›
+          <button @click="changePage(meta.current_page + 1)" :disabled="meta.current_page === meta.last_page"
+            class="page-button">
+            ›
           </button>
         </li>
         <li>
-          <button 
-             @click="changePage(meta.last_page)"
-            :disabled="meta.current_page === meta.last_page"
-            class="flex items-center justify-center px-3 h-8 leading-tight disabled:opacity-70 disabled:hover:bg-white disabled:hover:text-gray-500 text-gray-500 bg-white border border-gray-300 hover:bg-primary-400 hover:text-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-          >
-          »
+          <button @click="changePage(meta.last_page)" :disabled="meta.current_page === meta.last_page"
+            class="page-button rounded-r-lg">
+            »
           </button>
         </li>
       </ul>
     </nav>
     <!--  -->
 
-    
-    </div>
 
-  </template>
-  
- 
-  <!-- <Pagination
+  </div>
+
+</template>
+
+<style scoped>
+.page-button {
+  @apply flex h-8 items-center justify-center border border-teal-300 bg-teal-500 px-3 leading-tight text-white hover:bg-teal-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700;
+}
+</style>
+
+<!-- <Pagination
   :meta="users.meta"
   :query="{ search: searchValue }"
   :limit="5"

@@ -143,6 +143,19 @@ class IngredientSeeder extends Seeder
             ],
         ];
 
+        // [
+        //     'name' => [
+        //         'en' => '',
+        //         'id' => '',
+        //     ],
+        //     'inci_name' => 'Cocamidopropyl Betaine',
+        //     'safety_rating' => 4,
+        //     'description' => [
+        //         'en' => '',
+        //         'id' => ''
+        //     ],
+        // ],
+
         $now = now();
 
         foreach ($ingredients as &$ingredient) {

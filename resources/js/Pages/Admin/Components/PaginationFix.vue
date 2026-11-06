@@ -127,10 +127,10 @@ const changePage = (page) => {
 
                     <li v-else>
                         <button @click="changePage(page)" :aria-current="pagination.current_page === page
-                                ? 'page'
-                                : undefined
+                            ? 'page'
+                            : undefined
                             " :class="{
-                                '!bg-primary-400 !text-white':
+                                '!bg-white !text-teal-500':
                                     pagination.current_page === page
                             }" class="page-button">
                             {{ page }}
@@ -158,6 +158,6 @@ const changePage = (page) => {
 
 <style scoped>
 .page-button {
-    @apply flex h-8 items-center justify-center border border-gray-300 bg-white px-3 leading-tight text-gray-500 hover:bg-primary-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700;
+    @apply flex h-8 items-center justify-center border border-teal-300 bg-teal-500 px-3 leading-tight text-white hover:bg-teal-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700;
 }
 </style>

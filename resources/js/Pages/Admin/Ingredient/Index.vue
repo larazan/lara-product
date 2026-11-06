@@ -323,7 +323,7 @@ const deleteSelected = () => {
                                         </div>
                                     </td>
 
-                                    <td class="flex items-center p-4 mr-2 space-x-2 whitespace-nowrap">
+                                    <td class="flex items-center p-4 whitespace-nowrap">
                                         <div class="font-semibold text-sm text-gray-800">
                                             <p>{{ ingredient.name }}</p>
                                         </div>

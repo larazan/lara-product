@@ -17,12 +17,12 @@ return new class extends Migration
                 ->constrained('products')
                 ->cascadeOnDelete();
 
-            $table->foreignId('country_id')
-                ->nullable()
-                ->constrained('countries')
-                ->nullOnDelete();
+            // $table->foreignId('country_id')
+            //     ->nullable()
+            //     ->constrained('countries')
+            //     ->nullOnDelete();
 
-            $table->uuid('uuid')->unique();
+            // $table->uuid('uuid')->unique();
 
             // Contoh: Global, Indonesia, 12GB/512GB, Hybrid Premium
             $table->string('name');

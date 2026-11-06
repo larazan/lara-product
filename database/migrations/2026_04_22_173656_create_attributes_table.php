@@ -49,6 +49,12 @@ return new class extends Migration
                 'url',
             ])->default('text');
 
+            // Pilihan untuk select / multiselect
+            $table->json('options')->nullable()->after('type');
+
+            // Aturan validasi tambahan
+            $table->json('validation_rules')->nullable()->after('options');
+
             // Pengaturan tampilan dan pencarian
             $table->boolean('is_filterable')->default(false);
             $table->boolean('is_comparable')->default(true);

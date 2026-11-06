@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
     form: { type: Object, required: true },
@@ -9,11 +9,41 @@ const props = defineProps({
     maxSafetyInstructions: { type: Number, default: 20 },
 })
 
+const activeTab = ref('affiliates')
+
 const affiliates = computed(() => props.form.affiliates || [])
 const faqs = computed(() => props.form.faqs || [])
 const instructions = computed(() => props.form.instructions || [])
 const nutrition = computed(() => props.form.nutrition || [])
 const safetyInstructions = computed(() => props.form.safety_instructions || [])
+
+const tabs = computed(() => [
+    {
+        id: 'affiliates',
+        label: 'Affiliate',
+        count: affiliates.value.length,
+    },
+    {
+        id: 'faqs',
+        label: 'FAQ',
+        count: faqs.value.length,
+    },
+    {
+        id: 'instructions',
+        label: 'Petunjuk',
+        count: instructions.value.length,
+    },
+    {
+        id: 'nutrition',
+        label: 'Nutrisi / Komposisi',
+        count: nutrition.value.length,
+    },
+    {
+        id: 'safety',
+        label: 'Keselamatan',
+        count: safetyInstructions.value.length,
+    },
+])
 
 function addItem(field, item) {
     props.form[field] = [...(props.form[field] || []), item]
@@ -52,8 +82,33 @@ function addSafetyInstruction() {
 
 <template>
     <div class="space-y-8">
+
+        <!-- Tabs Navigation -->
+        <div class="space-y-4">
+            <div class="overflow-x-auto">
+                <div class="flex min-w-max gap-1 border-b border-gray-200" role="tablist"
+                    aria-label="Informasi tambahan produk">
+                    <button v-for="tab in tabs" :key="tab.id" type="button" role="tab" :id="`tab-${tab.id}`"
+                        :aria-selected="activeTab === tab.id" :aria-controls="`panel-${tab.id}`"
+                        @click="activeTab = tab.id" class="inline-flex items-center gap-2 border-b-2 px-4 py-3
+                       text-sm font-medium transition-colors" :class="activeTab === tab.id
+                        ? 'border-indigo-600 text-indigo-600'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'">
+                        {{ tab.label }}
+
+                        <span class="rounded-full px-2 py-0.5 text-xs" :class="activeTab === tab.id
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : 'bg-gray-100 text-gray-600'">
+                            {{ tab.count }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Affiliate links -->
-        <section class="space-y-4">
+        <section v-if="activeTab === 'affiliates'" id="panel-affiliates" role="tabpanel"
+            aria-labelledby="tab-affiliates" class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h3 class="text-base font-semibold text-gray-900">Tautan Pembelian / Affiliate</h3>
@@ -120,10 +175,11 @@ function addSafetyInstruction() {
                 Belum ada tautan pembelian. Bagian ini opsional.</p>
         </section>
 
-        <div class="border-t border-gray-200"></div>
+
 
         <!-- FAQs -->
-        <section class="space-y-4">
+        <section v-if="activeTab === 'faqs'" id="panel-faqs" role="tabpanel" aria-labelledby="tab-faqs"
+            class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h3 class="text-base font-semibold text-gray-900">FAQ Produk</h3>
@@ -153,10 +209,11 @@ function addSafetyInstruction() {
                 Belum ada FAQ.</p>
         </section>
 
-        <div class="border-t border-gray-200"></div>
+
 
         <!-- Usage instructions -->
-        <section class="space-y-4">
+        <section v-if="activeTab === 'instructions'" id="panel-instructions" role="tabpanel"
+            aria-labelledby="tab-instructions" class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h3 class="text-base font-semibold text-gray-900">Petunjuk Penggunaan</h3>
@@ -188,10 +245,11 @@ function addSafetyInstruction() {
                 Belum ada petunjuk penggunaan.</p>
         </section>
 
-        <div class="border-t border-gray-200"></div>
+
 
         <!-- Nutrition / ingredients -->
-        <section class="space-y-4">
+        <section v-if="activeTab === 'nutrition'" id="panel-nutrition" role="tabpanel" aria-labelledby="tab-nutrition"
+            class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h3 class="text-base font-semibold text-gray-900">Informasi Nutrisi / Komposisi</h3>
@@ -225,10 +283,11 @@ function addSafetyInstruction() {
                 Belum ada informasi nutrisi atau komposisi.</p>
         </section>
 
-        <div class="border-t border-gray-200"></div>
+
 
         <!-- Safety instructions -->
-        <section class="space-y-4">
+        <section v-if="activeTab === 'safety'" id="panel-safety" role="tabpanel" aria-labelledby="tab-safety"
+            class="space-y-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h3 class="text-base font-semibold text-gray-900">Peringatan & Informasi Keselamatan</h3>

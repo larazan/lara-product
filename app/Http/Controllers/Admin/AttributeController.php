@@ -29,7 +29,7 @@ class AttributeController extends Controller
             ->paginate($page)
             ->withQueryString();
 
-        $groups = AttributeGroup::orderBy('name', 'desc')->get();
+        $groups = AttributeGroup::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/Attribute/Index', [
             'page' => $page,

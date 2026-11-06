@@ -14,7 +14,7 @@ import SearchDropdown from '../Components/SearchDropdown.vue';
 import SearchDropdownSelect from '../Components/SearchDropdownSelect.vue';
 
 const props = defineProps({
-    page: Number,
+    pageNumber: Number,
     categories: Object,
     parentOption: Object,
     search: Object,
@@ -27,6 +27,42 @@ const props = defineProps({
 
 const page = usePage()
 
+// Helper untuk label bahasa
+const localeLabels = {
+    en: { label: 'English', shortLabel: 'En' },
+    id: { label: 'Indonesia', shortLabel: 'Id' },
+    ar: { label: 'Arabic', shortLabel: 'Ar' },
+};
+
+// Daftar tab dinamis berdasarkan props.locales
+const localeTabs = computed(() => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
+    return activeLocales.map(loc => ({
+        id: loc,
+        label: localeLabels[loc]?.label || loc.toUpperCase(),
+        shortLabel: localeLabels[loc]?.shortLabel || loc.toUpperCase(),
+    }));
+});
+
+// Tab & Locale aktif yang disatukan
+const activeTab = ref(page.props.locale || localeTabs.value[0]?.id || 'en');
+
+// Fungsi untuk membuat objek nama kosong sesuai locales
+const createEmptyNames = () => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
+    return Object.fromEntries(
+        activeLocales.map(locale => [locale, ''])
+    );
+};
+
+const formCategory = useForm({
+    // name: {},
+    name: createEmptyNames(),
+    parentId: "",
+    image: null,
+    old_image_url: null
+});
+
 const resetForm = () => {
     formCategory.reset()
     formCategory.clearErrors()
@@ -38,62 +74,36 @@ const resetForm = () => {
     formCategory.old_image_url = null
 }
 
-const locales = computed(() => {
-    return props.locales?.length
-        ? props.locales
-        : ['en', 'id']
-})
-
-const currentLocale = ref(
-    page.props.locale || locales.value[0] || 'en'
-)
-
-const createEmptyNames = () => {
-    return Object.fromEntries(
-        locales.value.map(locale => [locale, ''])
-    )
-}
-
-const formCategory = useForm({
-    // name: {},
-    name: createEmptyNames(),
-    parentId: "",
-    image: null,
-    old_image_url: null
-});
-
 const parentName = (option) => {
-    const names = option.name
+    const names = option.name;
+    if (!names) return '';
 
-    if (!names) return ''
-
-    // Mendukung nama berupa JSON translatable
     if (typeof names === 'string') {
         try {
-            const parsed = JSON.parse(names)
-
-            return parsed[currentLocale.value]
+            const parsed = JSON.parse(names);
+            return parsed[activeTab.value]
                 || parsed[page.props.locale]
                 || parsed.en
                 || Object.values(parsed)[0]
-                || ''
+                || '';
         } catch {
-            return names
+            return names;
         }
     }
 
-    return names[currentLocale.value]
+    return names[activeTab.value]
         || names[page.props.locale]
         || names.en
         || Object.values(names)[0]
-        || ''
-}
+        || '';
+};
 
+// Error handling dinamis berdasarkan tab bahasa yang sedang aktif
 const currentNameError = computed(() => {
-    return formCategory.errors[`name.${currentLocale.value}`]
+    return formCategory.errors[`name.${activeTab.value}`]
         || formCategory.errors.name
-        || ''
-})
+        || '';
+});
 
 const idCategory = ref('');
 const idDeleteCategory = ref('');
@@ -107,45 +117,38 @@ const closeModal = () => {
     if (showCreateModal.value) showCreateModal.value = false;
     if (showDeleteModal.value) showDeleteModal.value = false;
 
-    currentLocale.value = page.props.locale || props.locales[0] || 'en'
+    activeTab.value = page.props.locale || localeTabs.value[0]?.id || 'en';
 }
 
-// open edit modal
+// Open Edit Modal
 const openEditModal = (category) => {
     showEditModal.value = true;
     idCategory.value = category.id;
 
-    // 1. Tangani category.name apakah berupa string JSON atau objek
     let parsedName = {};
     if (category.name) {
         if (typeof category.name === 'string') {
             try {
                 parsedName = JSON.parse(category.name);
             } catch {
-                // Fallback jika string biasa (bukan JSON)
-                parsedName = { [locales.value[0]]: category.name };
+                parsedName = { [localeTabs.value[0].id]: category.name };
             }
         } else if (typeof category.name === 'object') {
             parsedName = category.name;
         }
     }
 
-    // 2. Masukkan ke formCategory.name dengan fallback kosong
     formCategory.name = {
         ...createEmptyNames(),
         ...parsedName,
     };
 
-    // 3. Pastikan mapping parent_id sesuai dengan properti database Anda 
-    // (apakah parent_id atau parentId)
     formCategory.parentId = category.parent_id ?? category.parentId ?? "";
-
-    formCategory.image = null; // Reset file input
+    formCategory.image = null;
     formCategory.old_image_url = category.image_url || category.old_image_url;
 
-    // Set locale aktif
-    currentLocale.value = page.props.locale || locales.value[0] || 'en';
-}
+    activeTab.value = page.props.locale || localeTabs.value[0]?.id || 'en';
+};
 
 // update method
 const updateCategory = () => {
@@ -510,42 +513,51 @@ const deleteSelected = () => {
                     <form @submit.prevent="updateCategory">
                         <div class="p-6 space-y-6">
                             <div class="grid grid-cols-6 gap-6">
-                                <!-- Locale -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Locale
-                                    </label>
-
-                                    <select v-model="currentLocale"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                        <option v-for="locale in locales" :key="locale" :value="locale">
-                                            {{ locale.toUpperCase() }}
-                                        </option>
-                                    </select>
+                                <!-- TABs -->
+                                <div class="col-span-6 p-0 flex w-full">
+                                    <div class="flex gap-1 items-center overflow-x-auto scrollbar-hide" role="tablist"
+                                        aria-label="locale tabs">
+                                        <button v-for="tab in localeTabs" :key="tab.id" type="button" role="tab"
+                                            :aria-selected="activeTab === tab.id" @click="activeTab = tab.id"
+                                            class="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition-all duration-200 sm:flex-row sm:gap-2 sm:text-sm"
+                                            :class="activeTab === tab.id
+                                                ? 'bg-gray-700 text-white shadow-md'
+                                                : 'text-gray-600 hover:bg-indigo-200'">
+                                            <span class="whitespace-nowrap tracking-tighter text-[12px]">{{ tab.label
+                                                }}</span>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <!-- Category Name -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="category-name"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Name ({{ currentLocale.toUpperCase() }})
-                                    </label>
+                                <!-- FORM SECTIONS (Dinamis menggunakan localeTabs) -->
+                                <div class="col-span-6">
+                                    <section v-for="tab in localeTabs" :key="tab.id" v-show="activeTab === tab.id">
+                                        <!-- Category Name -->
+                                        <div class="col-span-6">
+                                            <label :for="`category-name-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Name ({{ tab.label }})
+                                            </label>
 
-                                    <input id="category-name" v-model="formCategory.name[currentLocale]" type="text"
-                                        required :placeholder="`Enter category name in ${currentLocale.toUpperCase()}`"
-                                        :class="{
-                                            'border-red-500 focus:border-red-500 focus:ring-red-500':
-                                                currentNameError
-                                        }"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+                                            <!-- Menggunakan formCategory.name[tab.id] -->
+                                            <input :id="`category-name-${tab.id}`" v-model="formCategory.name[tab.id]"
+                                                type="text" required
+                                                :placeholder="`Enter category name in ${tab.label}`" :class="{
+                                                    'border-red-500 focus:border-red-500 focus:ring-red-500':
+                                                        currentNameError
+                                                }"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
 
-                                    <p v-if="currentNameError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ currentNameError }}
-                                    </p>
+                                            <p v-if="currentNameError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentNameError }}
+                                            </p>
 
-                                    <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Enter the category name for this language.
-                                    </p>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the category name for this language.
+                                            </p>
+                                        </div>
+                                    </section>
                                 </div>
 
                                 <!-- Parent Category -->
@@ -568,7 +580,7 @@ const deleteSelected = () => {
                                     </select> -->
 
                                     <SearchDropdownSelect v-model="formCategory.parentId" :items="parentOption"
-                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        value-key="id" label-key="name" :locale="`${activeTab}`"
                                         placeholder="Pilih parent kategori..."
                                         search-placeholder="Cari parent kategori..." />
 
@@ -577,10 +589,9 @@ const deleteSelected = () => {
                                     </p>
                                 </div>
 
-                                <!-- Image -->
                                 <div class="col-span-6 sm:col-span-3">
                                     <ImageUploadMod v-model="formCategory.image" label="Image"
-                                        :error="formCategory.errors.image" />
+                                        :error="formCategory.errors?.image" :preview-url="formCategory.old_image_url" />
                                 </div>
 
                             </div>
@@ -588,9 +599,9 @@ const deleteSelected = () => {
                         <!-- Modal footer -->
                         <div
                             class="flex gap-2 items-center p-6 border-t border-gray-200 rounded-b dark:border-gray-700">
-                            <button :disabled="formCategory.processing"
+                            <button
                                 class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-                                type="submit">{{ formCategory.processing ? 'Updating...' : 'Update' }}</button>
+                                type="submit">Update</button>
                             <button @click="closeModal"
                                 class=" justify-center text-gray-500 items-center bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
                                 type="button">Cancel</button>
@@ -601,79 +612,86 @@ const deleteSelected = () => {
         </Modal>
 
 
-
         <!-- Add Category Modal -->
         <Modal :show="showCreateModal" maxWidth="xl">
-            <div class="relative rounded-lg bg-white shadow dark:bg-gray-800">
+            <div class="">
+                <!-- Modal content -->
+                <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
+                    <!-- Modal header -->
+                    <div class="flex items-start justify-between p-5 border-b rounded-t dark:border-gray-700">
+                        <h3 class="text-xl font-semibold dark:text-white">
+                            Add new category
+                        </h3>
+                        <button @click="closeModal" type="button"
+                            class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white">
+                            <svg class="w-5 h-5" fill="currentColor" view-box="0 0 20 20"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Modal body -->
+                    <form action="#" @submit.prevent="addCategory">
+                        <div class="p-6 space-y-6">
+                            <div class="grid grid-cols-6 gap-6">
 
-                <!-- Header -->
-                <div class="flex items-center justify-between rounded-t border-b p-5 dark:border-gray-700">
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                        Add New Category
-                    </h3>
+                                <!-- TABs -->
+                                <div class="col-span-6 p-0 flex w-full">
+                                    <div class="flex gap-1 items-center overflow-x-auto scrollbar-hide" role="tablist"
+                                        aria-label="locale tabs">
+                                        <button v-for="tab in localeTabs" :key="tab.id" type="button" role="tab"
+                                            :aria-selected="activeTab === tab.id" @click="activeTab = tab.id"
+                                            class="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition-all duration-200 sm:flex-row sm:gap-2 sm:text-sm"
+                                            :class="activeTab === tab.id
+                                                ? 'bg-gray-700 text-white shadow-md'
+                                                : 'text-gray-600 hover:bg-indigo-200'">
+                                            <span class="whitespace-nowrap tracking-tighter text-[12px]">{{ tab.label
+                                                }}</span>
+                                        </button>
+                                    </div>
+                                </div>
 
-                    <button type="button" @click="closeModal"
-                        class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white">
-                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd"
-                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
+                                <!-- FORM SECTIONS (Dinamis menggunakan localeTabs) -->
+                                <div class="col-span-6">
+                                    <section v-for="tab in localeTabs" :key="tab.id" v-show="activeTab === tab.id">
+                                        <!-- Category Name -->
+                                        <div class="col-span-6">
+                                            <label :for="`category-name-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Name ({{ tab.label }})
+                                            </label>
 
-                <!-- Form -->
-                <form @submit.prevent="addCategory">
-                    <div class="space-y-6 p-6">
+                                            <!-- Menggunakan formCategory.name[tab.id] -->
+                                            <input :id="`category-name-${tab.id}`" v-model="formCategory.name[tab.id]"
+                                                type="text" required
+                                                :placeholder="`Enter category name in ${tab.label}`" :class="{
+                                                    'border-red-500 focus:border-red-500 focus:ring-red-500':
+                                                        currentNameError
+                                                }"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
 
-                        <div class="grid grid-cols-6 gap-6">
+                                            <p v-if="currentNameError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentNameError }}
+                                            </p>
 
-                            <!-- Locale -->
-                            <div class="col-span-6 sm:col-span-3">
-                                <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                    Locale
-                                </label>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the category name for this language.
+                                            </p>
+                                        </div>
+                                    </section>
+                                </div>
 
-                                <select v-model="currentLocale"
-                                    class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                    <option v-for="locale in locales" :key="locale" :value="locale">
-                                        {{ locale.toUpperCase() }}
-                                    </option>
-                                </select>
-                            </div>
+                                <!-- Parent Category -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="category-parent"
+                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                        Parent Category
+                                    </label>
 
-                            <!-- Category Name -->
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="category-name"
-                                    class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                    Name ({{ currentLocale.toUpperCase() }})
-                                </label>
-
-                                <input id="category-name" v-model="formCategory.name[currentLocale]" type="text"
-                                    required :placeholder="`Enter category name in ${currentLocale.toUpperCase()}`"
-                                    :class="{
-                                        'border-red-500 focus:border-red-500 focus:ring-red-500':
-                                            currentNameError
-                                    }"
-                                    class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
-
-                                <p v-if="currentNameError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                    {{ currentNameError }}
-                                </p>
-
-                                <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    Enter the category name for this language.
-                                </p>
-                            </div>
-
-                            <!-- Parent Category -->
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="category-parent"
-                                    class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                    Parent Category
-                                </label>
-
-                                <!-- <select id="category-parent" v-model="formCategory.parentId"
+                                    <!-- <select id="category-parent" v-model="formCategory.parentId"
                                     class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                     <option :value="null">
                                         No Parent (Root Category)
@@ -684,41 +702,35 @@ const deleteSelected = () => {
                                     </option>
                                 </select> -->
 
-                                <SearchDropdownSelect v-model="formCategory.parentId" :items="parentOption"
-                                    value-key="id" label-key="name" :locale="`${currentLocale}`"
-                                    placeholder="Pilih parent kategori..."
-                                    search-placeholder="Cari parent kategori..." />
+                                    <SearchDropdownSelect v-model="formCategory.parentId" :items="parentOption"
+                                        value-key="id" label-key="name" :locale="`${activeTab}`"
+                                        placeholder="Pilih parent kategori..."
+                                        search-placeholder="Cari parent kategori..." />
 
-                                <p v-if="formCategory.errors.parentId" class="mt-1 text-sm text-red-600">
-                                    {{ formCategory.errors.parentId }}
-                                </p>
+                                    <p v-if="formCategory.errors.parentId" class="mt-1 text-sm text-red-600">
+                                        {{ formCategory.errors.parentId }}
+                                    </p>
+                                </div>
+                                <div class="col-span-6 sm:col-span-3">
+                                    <ImageUploadMod v-model="formCategory.image" label="Image"
+                                        :error="formCategory.errors?.image" :preview-url="formCategory.old_image_url" />
+                                </div>
                             </div>
-
-                            <!-- Image -->
-                            <div class="col-span-6 sm:col-span-3">
-                                <ImageUploadMod v-model="formCategory.image" label="Image"
-                                    :error="formCategory.errors.image" />
-                            </div>
-
                         </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="flex items-center gap-2 rounded-b border-t border-gray-200 p-6 dark:border-gray-700">
-                        <button type="submit" :disabled="formCategory.processing"
-                            class="rounded-lg bg-primary-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50">
-                            {{ formCategory.processing ? 'Saving...' : 'Submit' }}
-                        </button>
-
-                        <button type="button" @click="closeModal" :disabled="formCategory.processing"
-                            class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                            Cancel
-                        </button>
-                    </div>
-                </form>
+                        <!-- Modal footer -->
+                        <div
+                            class="flex gap-2 items-center p-6 border-t border-gray-200 rounded-b dark:border-gray-700">
+                            <button
+                                class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+                                type="submit">Submit</button>
+                            <button @click="closeModal"
+                                class=" justify-center text-gray-500 items-center bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-primary-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+                                type="button">Cancel</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </Modal>
-
 
         <!-- Delete Category Modal -->
         <ConfirmModal :show="showDeleteModal" message="Are you sure you want to delete this contact?"
@@ -727,35 +739,3 @@ const deleteSelected = () => {
 
     </AdminLayout>
 </template>
-
-
-<!-- 
-<div class="col-span-6 sm:col-span-3">
-    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-        Locale
-    </label>
-
-    <select v-model="currentLocale"
-        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-        
-        <option v-for="locale in locales" :key="locale" :value="locale">
-            {{ locale.toUpperCase() }}
-        </option>
-
-    </select>
-</div>
-
-<div class="col-span-6 sm:col-span-3">
-    <label
-        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-        Name ({{ currentLocale.toUpperCase() }})
-    </label>
-
-    <input
-        type="text"
-        v-model="formCategory.name[currentLocale]"
-        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        placeholder="Category name"
-        required
-    >
-</div> -->

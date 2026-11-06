@@ -5,13 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Spatie\Translatable\HasTranslations;
 
 class Ingredient extends Model
 {
     //
     use HasFactory;
+    use HasTranslations;
 
     protected $table = 'ingredients';
+    public $translatable = [
+        'name',
+        'description',
+    ];
 
     protected $fillable = [
         'name',

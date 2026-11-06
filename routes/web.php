@@ -17,6 +17,8 @@ use App\Http\Controllers\Admin\ContactController as ContactAdminController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController as FaqAdminController;
 use App\Http\Controllers\Admin\IngredientController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProductController as ProductAdminController;
 use App\Http\Controllers\Admin\ReportController as ReportAdminController;
 use App\Http\Controllers\Admin\SettingController as SettingAdminController;
@@ -47,6 +49,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/users/{user}/sync-permissions', [UserAdminController::class, 'syncPermissions']);
     Route::delete('/users/bulk-delete', [UserAdminController::class, 'bulkDelete'])->name('admin.user.bulk-delete');
     Route::put('/admin/{user}/role', [UserAdminController::class, 'role'])->name('admin.role');
+    Route::put('/users/{user}/update-roles', [UserAdminController::class, 'updateRoles'])->name('users.update-roles');
 
     // article
     Route::get('/articles', [ArticleAdminController::class, 'index'])->name('admin.article.index');
@@ -89,8 +92,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/category/create', [CategoryAdminController::class, 'store'])->name('admin.category.create');
     Route::put('/category/update/{id}', [CategoryAdminController::class, 'update'])->name('admin.category.update');
     Route::delete('/category/delete/{id}', [CategoryAdminController::class, 'destroy'])->name('admin.category.destroy');
-    Route::put('/categories/{category}/toggle', [CategoryAdminController::class, 'toggle'])->name('admin.category.toggle');
-    Route::delete('/categories/bulk-delete', [CategoryAdminController::class, 'bulkDelete'])->name('admin.category.bulk-delete');
+    Route::put('/categories/{category}/toggle', [CategoryAdminController::class, 'toggle'])->name('admin.categories.toggle');
+    Route::delete('/categories/bulk-delete', [CategoryAdminController::class, 'bulkDelete'])->name('admin.categories.bulk-delete');
 
     // category article
     Route::get('/category-articles', [CategoryArticleController::class, 'index'])->name('admin.category-article.index');
@@ -166,6 +169,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // setting
     Route::get('/settings', [SettingAdminController::class, 'index'])->name('settings.index');
     Route::put('/settings', [SettingAdminController::class, 'update'])->name('settings.update');
+
+    // role & permission
+    Route::resource('roles', RoleController::class);
+    Route::resource('permissions', PermissionController::class);
 });
 
 Route::middleware('auth')->group(function () {

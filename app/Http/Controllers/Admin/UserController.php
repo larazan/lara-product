@@ -18,22 +18,40 @@ class UserController extends Controller
         //
         $page = 10;
         $sort = 'asc';
-        $users = User::when($request->q, function($query, $q){
-            $query->where('first_name', 'like', '%'.$q.'%')
-            ->orWhere('last_name', 'like', '%'.$q.'%');
+        $users = User::when($request->q, function ($query, $search) {
+            $query->where('username', 'like', "%{$search}%")
+                ->orWhere('first_name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%");
         })
-        // ->when(request('sort'), function ($q) {
-        //     $direction = request('direction', 'asc');
-        //     $q->orderBy(request('sort'), $direction);
-        // })
-         ->paginate($page)
-        ->withQueryString();
+            ->with('roles:id,name', 'permissions:id,name')
+            ->paginate($page)
+            ->withQueryString();
+
+        $roles = Role::with('permissions:id,name') // ⬅️ penting
+            ->orderBy('id', 'desc')
+            ->get();
 
         return Inertia::render('Admin/User/Index', [
-           'page' => $page,
+            'page' => $page,
             'users' => $users,
             'search' => $request->only('q'),
+            'roles' => $roles,
+            'permissions' => Permission::orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    public function updateRoles(Request $request, User $user)
+    {
+        $request->validate([
+            'roles' => 'array',
+            'permissions' => 'array',
+        ]);
+
+        // Sinkronisasi menggunakan Spatie package
+        $user->syncRoles($request->input('roles', []));
+        $user->syncPermissions($request->input('permissions', []));
+
+        return redirect()->back()->with('success', 'Roles and permissions updated successfully.');
     }
 
     /**
