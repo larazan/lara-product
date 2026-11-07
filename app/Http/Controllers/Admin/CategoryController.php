@@ -25,15 +25,16 @@ class CategoryController extends Controller
             ->when($request->q, function ($query, $q) {
                 $query->where('name', 'like', '%' . $q . '%');
             })
+            ->with('parent:id,name')
             ->paginate($page)
             ->withQueryString();
 
         $catParent = Category::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/Category/Index', [
-            'page' => $page,
-            // 'categories' => $categories,
-            'categories' => CategoryResource::collection($categories),
+            'pageNumber' => $page,
+            'categories' => $categories,
+            // 'categories' => CategoryResource::collection($categories),
             'parentOption' => $catParent,
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
@@ -44,6 +45,7 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|array',
+            'name.*' => 'required|string',
             'parent_id' => 'nullable|exists:categories,id'
         ]);
 
@@ -90,6 +92,7 @@ class CategoryController extends Controller
         //
         $request->validate([
             'name' => 'required|array',
+            'name.*' => 'required|string',
             'parent_id' => 'nullable|exists:categories,id'
         ]);
 

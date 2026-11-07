@@ -209,9 +209,9 @@ const openDeleteModal = (id) => {
 }
 
 // delete method
-const deleteCategory = async () => {
+const deleteCategory = () => {
     try {
-        await router.delete('/admin/category/delete/' + idDeleteCategory.value, {
+        router.delete('/admin/category/delete/' + idDeleteCategory.value, {
             onSuccess: page => {
                 Swal.fire({
                     toast: true,
@@ -288,7 +288,7 @@ const deleteSelected = () => {
             <div class="w-full mb-1">
                 <div class="mb-4">
                     <!-- breadcrumb -->
-                    <!-- <pre> {{ props.parentOption }} </pre> -->
+                    <!-- <pre> {{ props.categories }} </pre> -->
                     <!-- end breadcrumb -->
                     <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">All categories</h1>
                 </div>
@@ -415,8 +415,8 @@ const deleteSelected = () => {
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
                                             <label :for="`checkbox-${category.id}`" class="sr-only">checkbox</label>
                                             <div class="px-2 text-sm font-semibold text-gray-600">
-                                                {{ ((props.categories.meta.current_page - 1) *
-                                                    props.categories.meta.per_page) +
+                                                {{ ((props.categories.current_page - 1) *
+                                                    props.categories.per_page) +
                                                     index + 1 }}
                                             </div>
                                         </div>
@@ -437,11 +437,16 @@ const deleteSelected = () => {
                                                 </svg>
                                             </span>
                                         </div>
-                                        <div class="font-semibold text-sm text-gray-800">{{
-                                            category.name }}</div>
+                                        <div class="font-semibold text-sm text-gray-800">
+                                            <p>{{ category.name.en }}</p>
+                                            <p class="text-xs text-gray-500">{{ category.name.id }}</p>
+                                        </div>
                                     </td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
-                                        {{ category.parent_name }}</td>
+                                        <p v-if="category.parent">{{ category.parent.name.en }}</p>
+                                        <p v-if="category.parent" class="text-xs text-gray-500">{{
+                                            category.parent.name.id }}</p>
+                                    </td>
                                     <td
                                         class="max-w-sm p-4 overflow-hidden text-sm font-semibold text-gray-700 truncate xl:max-w-xs dark:text-gray-400">
                                         {{ category.slug }}</td>
@@ -486,8 +491,8 @@ const deleteSelected = () => {
             </div>
         </div>
 
-        <PaginationFix :meta="props.categories.meta" :query="{ search: search }" :limit="props.page" />
-        <!-- <PaginationMod :meta="props.categories.meta" :query="{ search: search }" :limit="props.page" /> -->
+        <!-- <PaginationFix :meta="props.categories.meta" :query="{ search: search }" :limit="props.pageNumber" /> -->
+        <PaginationMod :meta="props.categories" :query="{ search: search }" :limit="props.pageNumber" />
 
         <!-- Edit Category Modal -->
         <Modal :show="showEditModal" maxWidth="xl">

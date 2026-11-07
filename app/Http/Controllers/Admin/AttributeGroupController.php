@@ -24,6 +24,7 @@ class AttributeGroupController extends Controller
         $groups = AttributeGroup::when($request->q, function ($query, $q) {
             $query->where('name', 'like', '%' . $q . '%');
         })
+            ->with('category:id,name')
             // ->when(request('sort'), function ($q) {
             //     $direction = request('direction', 'asc');
             //     $q->orderBy(request('sort'), $direction);
@@ -34,9 +35,10 @@ class AttributeGroupController extends Controller
         $categories = Category::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/AttributeGroup/Index', [
-            'page' => $page,
+            'pageNumber' => $page,
             'categories' => $categories,
-            'groups' => GroupResource::collection($groups),
+            'groups' => $groups,
+            // 'groups' => GroupResource::collection($groups),
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
         ]);

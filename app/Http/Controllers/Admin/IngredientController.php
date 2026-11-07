@@ -27,14 +27,14 @@ class IngredientController extends Controller
 
 
         return Inertia::render('Admin/Ingredient/Index', [
-            'page' => $page,
+            'pageNumber' => $page,
             'ingredients' => $ingredients,
             'search' => $request->only('q'),
             'locales' => config('app.locales'),
         ]);
     }
 
-    public function store(Request $request)
+    public function storeTwo(Request $request)
     {
         $request->validate([
             'name' => 'required|array',
@@ -51,7 +51,7 @@ class IngredientController extends Controller
         return redirect()->route('admin.ingredient.index')->with('success', 'Ingredient created successfully.');
     }
 
-    public function update(Request $request, string $id)
+    public function updateTwo(Request $request, string $id)
     {
         //
         $request->validate([

@@ -13,11 +13,10 @@ import SearchDropdownAlt from '../Components/SearchDropdownAlt.vue';
 import SearchDropdownSelect from '../Components/SearchDropdownSelect.vue';
 
 const props = defineProps({
-    page: Number,
+    pageNumber: Number,
     attributes: Object,
     groups: Object,
     search: Object,
-    // locales: Array,
     locales: {
         type: Array,
         default: () => ['en', 'id'],
@@ -26,28 +25,40 @@ const props = defineProps({
 
 const page = usePage()
 
-// ---------------------------------------------------------
-// LOCALES
-// ---------------------------------------------------------
+// Helper untuk label bahasa
+const localeLabels = {
+    en: { label: 'English', shortLabel: 'En' },
+    id: { label: 'Indonesia', shortLabel: 'Id' },
+    ar: { label: 'Arabic', shortLabel: 'Ar' },
+};
 
-const locales = computed(() => {
-    return props.locales?.length
-        ? props.locales
-        : ['en', 'id']
-})
+// Daftar tab dinamis berdasarkan props.locales
+const localeTabs = computed(() => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
+    return activeLocales.map(loc => ({
+        id: loc,
+        label: localeLabels[loc]?.label || loc.toUpperCase(),
+        shortLabel: localeLabels[loc]?.shortLabel || loc.toUpperCase(),
+    }));
+});
 
-const currentLocale = ref(
-    page.props.locale || locales.value[0] || 'en'
-)
+// Tab & Locale aktif yang disatukan
+const activeTab = ref(page.props.locale || localeTabs.value[0]?.id || 'en');
 
-const emptyTranslations = () =>
-    Object.fromEntries(locales.value.map(locale => [locale, '']))
-
+// Fungsi untuk membuat objek nama kosong sesuai locales
 const createEmptyNames = () => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
     return Object.fromEntries(
-        locales.value.map(locale => [locale, ''])
-    )
-}
+        activeLocales.map(locale => [locale, ''])
+    );
+};
+
+const createEmptyLocales = () => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
+    return Object.fromEntries(
+        activeLocales.map(locale => [locale, ''])
+    );
+};
 
 // ---------------------------------------------------------
 // INITIAL FORM DATA
@@ -56,7 +67,7 @@ const createEmptyNames = () => {
 const formAttribute = useForm({
     group_id: null,
     name: createEmptyNames(),
-    label: emptyTranslations(),
+    label: createEmptyLocales(),
     description: "",
     unit: "",
     type: 'text',
@@ -83,8 +94,6 @@ const resetForm = () => {
     formAttribute.reset()
     formAttribute.clearErrors()
 
-    currentLocale.value =
-        page.props.locale || locales.value[0] || 'en'
 }
 
 // ---------------------------------------------------------
@@ -105,69 +114,18 @@ const removeOption = (index) => {
 }
 
 // ---------------------------------------------------------
-// GROUP NAME
-// ---------------------------------------------------------
-
-const groupName = (group) => {
-    if (!group) return ''
-
-    // Mendukung nama group berupa object terjemahan
-    // atau string biasa dari backend.
-    if (typeof group.name === 'string') {
-        try {
-            const translations = JSON.parse(group.name)
-            return translations[currentLocale.value]
-                ?? translations[locales[0]]
-                ?? group.name
-        } catch {
-            return group.name
-        }
-    }
-
-    return group.name?.[currentLocale.value]
-        ?? group.name?.[locales[0]]
-        ?? ''
-}
-
-const groupNameAlt = (group) => {
-    const names = group.name
-
-    if (!names) return ''
-
-    // Mendukung nama berupa JSON translatable
-    if (typeof names === 'string') {
-        try {
-            const parsed = JSON.parse(names)
-
-            return parsed[currentLocale.value]
-                || parsed[page.props.locale]
-                || parsed.en
-                || Object.values(parsed)[0]
-                || ''
-        } catch {
-            return names
-        }
-    }
-
-    return names[currentLocale.value]
-        || names[page.props.locale]
-        || names.en
-        || Object.values(names)[0]
-        || ''
-}
-
-// ---------------------------------------------------------
 // TRANSLATION ERRORS
 // ---------------------------------------------------------
 
+// Error handling dinamis berdasarkan tab bahasa yang sedang aktif
 const currentNameError = computed(() => {
-    return formAttribute.errors[`name.${currentLocale.value}`]
+    return formAttribute.errors[`name.${activeTab.value}`]
         || formAttribute.errors.name
         || ''
 })
 
 const currentLabelError = computed(() => {
-    return formAttribute.errors[`label.${currentLocale.value}`]
+    return formAttribute.errors[`label.${activeTab.value}`]
         || formAttribute.errors.label
         || ''
 })
@@ -193,7 +151,7 @@ const closeModal = () => {
 
     resetForm()
 
-    currentLocale.value = page.props.locale || props.locales[0] || 'en'
+    activeTab.value = page.props.locale || localeTabs.value[0]?.id || 'en';
 }
 
 // Helper kecil untuk parse data translatable (bisa berupa JSON string atau object)
@@ -204,8 +162,8 @@ const parseTranslations = (value) => {
             try {
                 parsed = JSON.parse(value);
             } catch {
-                // Jika string biasa (bukan JSON), masukkan ke bahasa utama
-                parsed = { [locales.value[0]]: value };
+                // Gunakan id dari tab pertama sebagai fallback
+                parsed = { [localeTabs.value[0]?.id || 'en']: value };
             }
         } else if (typeof value === 'object') {
             parsed = value;
@@ -262,8 +220,7 @@ const openEditModal = (attribute) => {
     formAttribute.reset();
     formAttribute.clearErrors();
 
-    currentLocale.value =
-        page.props.locale || locales.value[0] || 'en';
+    activeTab.value = page.props.locale || localeTabs.value[0]?.id || 'en';
 
     showCreateModal.value = false;
     showEditModal.value = true;
@@ -433,7 +390,7 @@ const deleteSelected = () => {
             <div class="w-full mb-1">
                 <div class="mb-4">
                     <!-- breadcrumb -->
-                    <!-- <pre>{{ props.groups }}</pre> -->
+                    <!-- <pre>{{ props.attributes }}</pre> -->
 
                     <!-- end breadcrumb -->
                     <h1 class="text-xl font-semibold text-gray-900 sm:text-2xl dark:text-white">All attributes</h1>
@@ -538,6 +495,10 @@ const deleteSelected = () => {
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
+                                        Label
+                                    </th>
+                                    <th scope="col"
+                                        class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
                                         Unit
                                     </th>
                                     <th scope="col"
@@ -573,8 +534,8 @@ const deleteSelected = () => {
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
                                             <label :for="`checkbox-${attribute.id}`" class="sr-only">checkbox</label>
                                             <div class="px-2 text-sm font-semibold text-gray-600">
-                                                {{ ((props.attributes.meta.current_page - 1) *
-                                                    props.attributes.meta.per_page) +
+                                                {{ ((props.attributes.current_page - 1) *
+                                                    props.attributes.per_page) +
                                                     index + 1 }}
                                             </div>
                                         </div>
@@ -598,15 +559,21 @@ const deleteSelected = () => {
                                         </div>
                                         <div class="font-semibold text-sm text-gray-800">
                                             <div class="flex flex-col">
-                                                <p>{{ attribute.label }}</p>
-                                                <span class="text-gray-500 text-xs font-semibold">{{ attribute.name
-                                                }}</span>
+                                                <p>{{ attribute.name.en }}</p>
+                                                <span class="text-gray-500 text-xs font-semibold">{{ attribute.name.id
+                                                    }}</span>
                                             </div>
 
                                         </div>
                                     </td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
-                                        {{ attribute.group_name }}</td>
+                                        <p>{{ attribute.group.name.en }}</p>
+                                        <p class="text-xs text-gray-500">{{ attribute.group.name.id }}</p>
+                                    </td>
+                                    <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
+                                        <p>{{ attribute.label.en }}</p>
+                                        <p class="text-xs text-gray-500">{{ attribute.label.id }}</p>
+                                    </td>
                                     <td
                                         class="max-w-sm p-4 overflow-hidden text-sm font-semibold text-gray-700 truncate xl:max-w-xs dark:text-gray-400">
                                         {{ attribute.unit }}</td>
@@ -665,7 +632,7 @@ const deleteSelected = () => {
             </div>
         </div>
 
-        <PaginationMod :meta="props.attributes.meta" :query="{ search: search }" :limit="props.page" />
+        <PaginationMod :meta="props.attributes" :query="{ search: search }" :limit="props.pageNumber" />
 
 
         <!-- Edit Attribute Modal -->
@@ -704,18 +671,70 @@ const deleteSelected = () => {
 
                             <div class="grid grid-cols-6 gap-5 ">
 
-                                <!-- Locale -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Locale
-                                    </label>
+                                <!-- TABs -->
+                                <div class="col-span-6 p-0 flex w-full">
+                                    <div class="flex gap-1 items-center overflow-x-auto scrollbar-hide" role="tablist"
+                                        aria-label="locale tabs">
+                                        <button v-for="tab in localeTabs" :key="tab.id" type="button" role="tab"
+                                            :aria-selected="activeTab === tab.id" @click="activeTab = tab.id"
+                                            class="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition-all duration-200 sm:flex-row sm:gap-2 sm:text-sm"
+                                            :class="activeTab === tab.id
+                                                ? 'bg-gray-700 text-white shadow-md'
+                                                : 'text-gray-600 hover:bg-indigo-200'">
+                                            <span class="whitespace-nowrap tracking-tighter text-[12px]">{{ tab.label
+                                            }}</span>
+                                        </button>
+                                    </div>
+                                </div>
 
-                                    <select v-model="currentLocale"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                        <option v-for="locale in locales" :key="locale" :value="locale">
-                                            {{ locale.toUpperCase() }}
-                                        </option>
-                                    </select>
+                                <!-- FORM SECTIONS (Dinamis menggunakan localeTabs) -->
+                                <div class="col-span-6 space-y-4 w-full">
+                                    <section v-for="tab in localeTabs" :key="tab.id" v-show="activeTab === tab.id"
+                                        class="grid grid-cols-6 gap-6">
+
+                                        <!-- Group Name -->
+                                        <div class="col-span-6 sm:col-span-3">
+                                            <label :for="`attribute-name-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Name ({{ tab.label }})
+                                            </label>
+
+                                            <input :id="`attribute-name-${tab.id}`" v-model="formAttribute.name[tab.id]"
+                                                type="text" required
+                                                :placeholder="`Enter group attribute in ${tab.label}`"
+                                                :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-500': currentNameError }"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+
+                                            <p v-if="currentNameError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentNameError }}
+                                            </p>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the attribute name for this language.
+                                            </p>
+                                        </div>
+
+                                        <!-- Group Label -->
+                                        <div class="col-span-6 sm:col-span-3">
+                                            <label :for="`attribute-label-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Label ({{ tab.label }})
+                                            </label>
+                                            <input :id="`attribute-label-${tab.id}`"
+                                                v-model="formAttribute.label[tab.id]" type="text" required
+                                                :placeholder="`Enter attribute label in ${tab.label}`"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+
+                                            <p v-if="currentLabelError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentLabelError }}
+                                            </p>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the attribute label for this language.
+                                            </p>
+                                        </div>
+
+                                    </section>
                                 </div>
 
                                 <!-- Group -->
@@ -737,48 +756,11 @@ const deleteSelected = () => {
                                     </select> -->
 
                                     <SearchDropdownSelect v-model="formAttribute.group_id" :items="groups"
-                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        value-key="id" label-key="name" :locale="`${activeTab}`"
                                         placeholder="Pilih group..." search-placeholder="Cari group..." />
 
                                     <p v-if="formAttribute.errors.group_id" class="mt-1 text-sm text-red-600">
                                         {{ formAttribute.errors.group_id }}
-                                    </p>
-                                </div>
-
-                                <!-- Name -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="name"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Name ({{ currentLocale.toUpperCase() }})
-                                    </label>
-
-                                    <input id="name" v-model="formAttribute.name[currentLocale]" type="text" required
-                                        :placeholder="`Enter attribute name in ${currentLocale.toUpperCase()}`" :class="{
-                                            'border-red-500 focus:border-red-500 focus:ring-red-500':
-                                                currentNameError
-                                        }"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
-
-                                    <p v-if="currentNameError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ currentNameError }}
-                                    </p>
-
-                                    <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Enter the attribute name for this language.
-                                    </p>
-                                </div>
-
-                                <!-- Label -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="label"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Label ({{ currentLocale.toUpperCase() }})
-                                    </label>
-                                    <input id="label" v-model="formAttribute.label[currentLocale]" type="text" required
-                                        :placeholder="`Enter attribute label in ${currentLocale.toUpperCase()}`"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
-                                    <p v-if="formAttribute.errors[`label.${currentLocale}`]" class="form-error">
-                                        {{ formAttribute.errors[`label.${currentLocale}`] }}
                                     </p>
                                 </div>
 
@@ -874,14 +856,12 @@ const deleteSelected = () => {
                                     <input v-model="option.value" type="text" required placeholder="e.g. amoled"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                                 </div>
-
                                 <div class="col-span-5 ">
                                     <label for="form-label"
                                         class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
-                                        Label ({{ currentLocale.toUpperCase() }})
+                                        Label
                                     </label>
-                                    <input v-model="option.label[currentLocale]" type="text" required
-                                        :placeholder="`Label in ${currentLocale.toUpperCase()}`"
+                                    <input v-model="option.label" type="text" required :placeholder="`Label in `"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                                 </div>
 
@@ -1041,18 +1021,70 @@ const deleteSelected = () => {
 
                             <div class="grid grid-cols-6 gap-5">
 
-                                <!-- Locale -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Locale
-                                    </label>
+                                <!-- TABs -->
+                                <div class="col-span-6 p-0 flex w-full">
+                                    <div class="flex gap-1 items-center overflow-x-auto scrollbar-hide" role="tablist"
+                                        aria-label="locale tabs">
+                                        <button v-for="tab in localeTabs" :key="tab.id" type="button" role="tab"
+                                            :aria-selected="activeTab === tab.id" @click="activeTab = tab.id"
+                                            class="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition-all duration-200 sm:flex-row sm:gap-2 sm:text-sm"
+                                            :class="activeTab === tab.id
+                                                ? 'bg-gray-700 text-white shadow-md'
+                                                : 'text-gray-600 hover:bg-indigo-200'">
+                                            <span class="whitespace-nowrap tracking-tighter text-[12px]">{{ tab.label
+                                            }}</span>
+                                        </button>
+                                    </div>
+                                </div>
 
-                                    <select v-model="currentLocale"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                        <option v-for="locale in locales" :key="locale" :value="locale">
-                                            {{ locale.toUpperCase() }}
-                                        </option>
-                                    </select>
+                                <!-- FORM SECTIONS (Dinamis menggunakan localeTabs) -->
+                                <div class="col-span-6 space-y-4 w-full">
+                                    <section v-for="tab in localeTabs" :key="tab.id" v-show="activeTab === tab.id"
+                                        class="grid grid-cols-6 gap-6">
+
+                                        <!-- Group Name -->
+                                        <div class="col-span-6 sm:col-span-3">
+                                            <label :for="`attribute-name-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Name ({{ tab.label }})
+                                            </label>
+
+                                            <input :id="`attribute-name-${tab.id}`" v-model="formAttribute.name[tab.id]"
+                                                type="text" required
+                                                :placeholder="`Enter group attribute in ${tab.label}`"
+                                                :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-500': currentNameError }"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+
+                                            <p v-if="currentNameError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentNameError }}
+                                            </p>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the attribute name for this language.
+                                            </p>
+                                        </div>
+
+                                        <!-- Group Label -->
+                                        <div class="col-span-6 sm:col-span-3">
+                                            <label :for="`attribute-label-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Label ({{ tab.label }})
+                                            </label>
+                                            <input :id="`attribute-label-${tab.id}`"
+                                                v-model="formAttribute.label[tab.id]" type="text" required
+                                                :placeholder="`Enter attribute label in ${tab.label}`"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+
+                                            <p v-if="currentLabelError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentLabelError }}
+                                            </p>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the attribute label for this language.
+                                            </p>
+                                        </div>
+
+                                    </section>
                                 </div>
 
                                 <!-- Group -->
@@ -1079,51 +1111,13 @@ const deleteSelected = () => {
                                     </select> -->
 
                                     <SearchDropdownSelect v-model="formAttribute.group_id" :items="groups"
-                                        value-key="id" label-key="name" :locale="`${currentLocale}`"
+                                        value-key="id" label-key="name" :locale="`${activeTab}`"
                                         placeholder="Pilih group..." search-placeholder="Cari group..." />
 
                                     <p v-if="formAttribute.errors.group_id" class="mt-1 text-sm text-red-600">
                                         {{ formAttribute.errors.group_id }}
                                     </p>
                                 </div>
-
-                                <!-- Name -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="name"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Name ({{ currentLocale.toUpperCase() }})
-                                    </label>
-
-                                    <input id="name" v-model="formAttribute.name[currentLocale]" type="text" required
-                                        :placeholder="`Enter attribute name in ${currentLocale.toUpperCase()}`" :class="{
-                                            'border-red-500 focus:border-red-500 focus:ring-red-500':
-                                                currentNameError
-                                        }"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
-
-                                    <p v-if="currentNameError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ currentNameError }}
-                                    </p>
-
-                                    <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Enter the attribute name for this language.
-                                    </p>
-                                </div>
-
-                                <!-- Label -->
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="label"
-                                        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                                        Label ({{ currentLocale.toUpperCase() }})
-                                    </label>
-                                    <input id="label" v-model="formAttribute.label[currentLocale]" type="text" required
-                                        :placeholder="`Enter attribute label in ${currentLocale.toUpperCase()}`"
-                                        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
-                                    <p v-if="formAttribute.errors[`label.${currentLocale}`]" class="form-error">
-                                        {{ formAttribute.errors[`label.${currentLocale}`] }}
-                                    </p>
-                                </div>
-
 
                                 <!-- Type -->
                                 <div class="col-span-6 sm:col-span-3">
@@ -1220,10 +1214,9 @@ const deleteSelected = () => {
                                 <div class="col-span-5 ">
                                     <label for="form-label"
                                         class="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
-                                        Label ({{ currentLocale.toUpperCase() }})
+                                        Label
                                     </label>
-                                    <input v-model="option.label[currentLocale]" type="text" required
-                                        :placeholder="`Label in ${currentLocale.toUpperCase()}`"
+                                    <input v-model="option.label" type="text" required :placeholder="`Label in `"
                                         class="block w-full rounded-lg border border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                                 </div>
 

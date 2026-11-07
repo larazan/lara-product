@@ -3,16 +3,64 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import ToggleSwitch from '@/Pages/User/Components/ToggleSwitch.vue';
 import { ref, reactive, watch, computed } from 'vue';
-import { router, Head, useForm } from '@inertiajs/vue3';
+import { router, Head, useForm, usePage } from '@inertiajs/vue3';
 import ConfirmModal from '../Components/ConfirmModal.vue';
 import PaginationMod from '../Components/PaginationMod.vue';
 import MyEditor from '../Components/MyEditor.vue';
 import { limitWords } from '@/Utils/text.js'
 
 const props = defineProps({
-    page: Number,
+    pageNumber: Number,
     ingredients: Object,
     search: Object,
+    locales: {
+        type: Array,
+        default: () => ['en', 'id'],
+    },
+});
+
+const page = usePage()
+
+// Helper untuk label bahasa
+const localeLabels = {
+    en: { label: 'English', shortLabel: 'En' },
+    id: { label: 'Indonesia', shortLabel: 'Id' },
+    ar: { label: 'Arabic', shortLabel: 'Ar' },
+};
+
+// Daftar tab dinamis berdasarkan props.locales
+const localeTabs = computed(() => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
+    return activeLocales.map(loc => ({
+        id: loc,
+        label: localeLabels[loc]?.label || loc.toUpperCase(),
+        shortLabel: localeLabels[loc]?.shortLabel || loc.toUpperCase(),
+    }));
+});
+
+// Tab & Locale aktif yang disatukan
+const activeTab = ref(page.props.locale || localeTabs.value[0]?.id || 'en');
+
+// Fungsi untuk membuat objek nama kosong sesuai locales
+const createEmptyNames = () => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
+    return Object.fromEntries(
+        activeLocales.map(locale => [locale, ''])
+    );
+};
+
+const createEmptyLocales = () => {
+    const activeLocales = props.locales?.length ? props.locales : ['en', 'id'];
+    return Object.fromEntries(
+        activeLocales.map(locale => [locale, ''])
+    );
+};
+
+const formIngredient = useForm({
+    name: createEmptyNames(),
+    inci_name: "",
+    safety_rating: "",
+    description: createEmptyNames(),
 });
 
 const resetForm = () => {
@@ -20,11 +68,11 @@ const resetForm = () => {
     formIngredient.clearErrors()
 }
 
-const formIngredient = useForm({
-    name: "",
-    inci_name: "",
-    safety_rating: "",
-    description: "",
+// Error handling dinamis berdasarkan tab bahasa yang sedang aktif
+const currentNameError = computed(() => {
+    return formIngredient.errors[`name.${activeTab.value}`]
+        || formIngredient.errors.name
+        || '';
 });
 
 const idIngredient = ref('');
@@ -38,6 +86,8 @@ const closeModal = () => {
     if (showEditModal.value) showEditModal.value = false;
     if (showCreateModal.value) showCreateModal.value = false;
     if (showDeleteModal.value) showDeleteModal.value = false;
+
+    activeTab.value = page.props.locale || localeTabs.value[0]?.id || 'en';
 }
 
 // open edit modal
@@ -45,10 +95,30 @@ const openEditModal = (ingredient) => {
     showEditModal.value = true;
     idIngredient.value = ingredient.id;
 
-    formIngredient.name = ingredient.name;
+    // Helper parser untuk data JSON / Object multi-bahasa
+    const parseLocaleField = (fieldData) => {
+        let parsed = {};
+        if (fieldData) {
+            if (typeof fieldData === 'string') {
+                try {
+                    parsed = JSON.parse(fieldData);
+                } catch {
+                    parsed = { [localeTabs.value[0].id]: fieldData };
+                }
+            } else if (typeof fieldData === 'object') {
+                parsed = fieldData;
+            }
+        }
+        return { ...createEmptyNames(), ...parsed };
+    };
+
+    formIngredient.name = parseLocaleField(ingredient.name);
+    formIngredient.description = parseLocaleField(ingredient.description);
+
     formIngredient.inci_name = ingredient.inci_name;
     formIngredient.safety_rating = ingredient.safety_rating;
-    formIngredient.description = ingredient.description;
+
+    activeTab.value = page.props.locale || localeTabs.value[0]?.id || 'en';
 }
 
 // update method
@@ -107,9 +177,9 @@ const openDeleteModal = (id) => {
 }
 
 // delete method
-const deleteIngredient = async () => {
+const deleteIngredient = () => {
     try {
-        await router.delete('/admin/ingredient/delete/' + idDeleteIngredient.value, {
+        router.delete('/admin/ingredient/delete/' + idDeleteIngredient.value, {
             onSuccess: page => {
                 Swal.fire({
                     toast: true,
@@ -133,7 +203,6 @@ const search = ref(props.search ?? '');
 watch(search, (value) => {
     router.get('/admin/ingredients', { q: value }, { preserveState: true, replace: true })
 });
-
 
 // delete selected
 const selected = ref([])
@@ -325,13 +394,16 @@ const deleteSelected = () => {
 
                                     <td class="flex items-center p-4 whitespace-nowrap">
                                         <div class="font-semibold text-sm text-gray-800">
-                                            <p>{{ ingredient.name }}</p>
+                                            <p>{{ ingredient.name.en }}</p>
+                                            <p>{{ ingredient.name.id }}</p>
                                         </div>
                                     </td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
                                         {{ ingredient.inci_name }}</td>
                                     <td class="p-4 text-sm font-medium text-gray-700 whitespace-nowrap dark:text-white">
-                                        {{ limitWords(ingredient.description, 10) }}</td>
+                                        <p>{{ limitWords(ingredient.description.en, 10) }}</p>
+                                        <p>{{ limitWords(ingredient.description.id, 10) }}</p>
+                                    </td>
                                     <td
                                         class="max-w-sm p-4 overflow-hidden text-sm font-semibold text-gray-700 truncate xl:max-w-xs dark:text-gray-400">
                                         {{ ingredient.safety_rating }}</td>
@@ -376,7 +448,7 @@ const deleteSelected = () => {
             </div>
         </div>
 
-        <PaginationMod :meta="props.ingredients" :query="{ search: search }" :limit="props.page" />
+        <PaginationMod :meta="props.ingredients" :query="{ search: search }" :limit="props.pageNumber" />
 
         <!-- Edit Ingredient Modal -->
         <Modal :show="showEditModal" maxWidth="xl">
@@ -403,15 +475,65 @@ const deleteSelected = () => {
                         <div class="p-6 space-y-6">
                             <div class="grid grid-cols-6 gap-6">
 
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="name"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                        Name
-                                    </label>
-                                    <input type="text" v-model="formIngredient.name" id="name"
-                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        placeholder="" required>
+                                <!-- TABs -->
+                                <div class="col-span-6 p-0 flex w-full">
+                                    <div class="flex gap-1 items-center overflow-x-auto scrollbar-hide" role="tablist"
+                                        aria-label="locale tabs">
+                                        <button v-for="tab in localeTabs" :key="tab.id" type="button" role="tab"
+                                            :aria-selected="activeTab === tab.id" @click="activeTab = tab.id"
+                                            class="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition-all duration-200 sm:flex-row sm:gap-2 sm:text-sm"
+                                            :class="activeTab === tab.id
+                                                ? 'bg-gray-700 text-white shadow-md'
+                                                : 'text-gray-600 hover:bg-indigo-200'">
+                                            <span class="whitespace-nowrap tracking-tighter text-[12px]">{{ tab.label
+                                                }}</span>
+                                        </button>
+                                    </div>
                                 </div>
+
+                                <!-- FORM SECTIONS (Dinamis menggunakan localeTabs) -->
+                                <div class="col-span-6 space-y-4">
+                                    <section v-for="tab in localeTabs" :key="tab.id" v-show="activeTab === tab.id"
+                                        class="space-y-4">
+
+                                        <!-- Ingredient Name -->
+                                        <div>
+                                            <label :for="`ingredient-name-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Name ({{ tab.label }})
+                                            </label>
+
+                                            <input :id="`ingredient-name-${tab.id}`"
+                                                v-model="formIngredient.name[tab.id]" type="text" required
+                                                :placeholder="`Enter ingredient name in ${tab.label}`"
+                                                :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-500': currentNameError }"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+
+                                            <p v-if="currentNameError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentNameError }}
+                                            </p>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the ingredient name for this language.
+                                            </p>
+                                        </div>
+
+                                        <!-- Description (Multi-language fixed) -->
+                                        <div>
+                                            <label :for="`ingredient-description-${tab.id}`"
+                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                                Description ({{ tab.label }})
+                                            </label>
+
+                                            <textarea :id="`ingredient-description-${tab.id}`"
+                                                v-model="formIngredient.description[tab.id]" rows="5"
+                                                :placeholder="`Jelaskan informasi umum bahan dalam ${tab.label}...`"
+                                                class="w-full resize-y rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"></textarea>
+                                        </div>
+
+                                    </section>
+                                </div>
+
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="inci"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -421,16 +543,7 @@ const deleteSelected = () => {
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="">
                                 </div>
-                                <div class="col-span-6 ">
-                                    <label for="description"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                        Description
-                                    </label>
-                                    <textarea id="description" v-model="formIngredient.description" rows="5"
-                                        placeholder="Jelaskan informasi umum bahan..." class="w-full resize-y rounded-lg border border-gray-300
-                       px-3 py-2.5 text-sm outline-none
-                       focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
-                                </div>
+
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="safety"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -484,15 +597,67 @@ const deleteSelected = () => {
                     <form action="#" @submit.prevent="addIngredient">
                         <div class="p-6 space-y-6">
                             <div class="grid grid-cols-6 gap-6">
-                                <div class="col-span-6 sm:col-span-3">
-                                    <label for="name"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                        Name
-                                    </label>
-                                    <input type="text" v-model="formIngredient.name" id="name"
-                                        class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                                        placeholder="" required>
+
+                                <!-- TABs -->
+                                <div class="col-span-6 p-0 flex w-full">
+                                    <div class="flex gap-1 items-center overflow-x-auto scrollbar-hide" role="tablist"
+                                        aria-label="locale tabs">
+                                        <button v-for="tab in localeTabs" :key="tab.id" type="button" role="tab"
+                                            :aria-selected="activeTab === tab.id" @click="activeTab = tab.id"
+                                            class="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition-all duration-200 sm:flex-row sm:gap-2 sm:text-sm"
+                                            :class="activeTab === tab.id
+                                                ? 'bg-gray-700 text-white shadow-md'
+                                                : 'text-gray-600 hover:bg-indigo-200'">
+                                            <span class="whitespace-nowrap tracking-tighter text-[12px]">{{ tab.label
+                                            }}</span>
+                                        </button>
+                                    </div>
                                 </div>
+
+                                <!-- FORM SECTIONS (Dinamis menggunakan localeTabs) -->
+                                <div class="col-span-6 space-y-4">
+                                    <section v-for="tab in localeTabs" :key="tab.id" v-show="activeTab === tab.id"
+                                        class="space-y-4">
+
+                                        <!-- Ingredient Name -->
+                                        <div>
+                                            <label :for="`ingredient-name-${tab.id}`"
+                                                class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
+                                                Name ({{ tab.label }})
+                                            </label>
+
+                                            <input :id="`ingredient-name-${tab.id}`"
+                                                v-model="formIngredient.name[tab.id]" type="text" required
+                                                :placeholder="`Enter ingredient name in ${tab.label}`"
+                                                :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-500': currentNameError }"
+                                                class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" />
+
+                                            <p v-if="currentNameError"
+                                                class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                                {{ currentNameError }}
+                                            </p>
+                                            <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Enter the ingredient name for this language.
+                                            </p>
+                                        </div>
+
+                                        <!-- Description (Multi-language fixed) -->
+                                        <div>
+                                            <label :for="`ingredient-description-${tab.id}`"
+                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                                                Description ({{ tab.label }})
+                                            </label>
+
+                                            <textarea :id="`ingredient-description-${tab.id}`"
+                                                v-model="formIngredient.description[tab.id]" rows="5"
+                                                :placeholder="`Jelaskan informasi umum bahan dalam ${tab.label}...`"
+                                                class="w-full resize-y rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"></textarea>
+                                        </div>
+
+                                    </section>
+                                </div>
+
+
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="inci"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -502,17 +667,7 @@ const deleteSelected = () => {
                                         class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         placeholder="">
                                 </div>
-                                <div class="col-span-6 ">
-                                    <label for="description"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                                        Description
-                                    </label>
 
-                                    <textarea id="description" v-model="formIngredient.description" rows="5"
-                                        placeholder="Jelaskan informasi umum bahan..." class="w-full resize-y rounded-lg border border-gray-300
-                       px-3 py-2.5 text-sm outline-none
-                       focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
-                                </div>
                                 <div class="col-span-6 sm:col-span-3">
                                     <label for="safety"
                                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">

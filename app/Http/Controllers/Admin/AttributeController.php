@@ -26,14 +26,16 @@ class AttributeController extends Controller
             //     $direction = request('direction', 'asc');
             //     $q->orderBy(request('sort'), $direction);
             // })
+            ->with('group:id,name')
             ->paginate($page)
             ->withQueryString();
 
         $groups = AttributeGroup::orderBy('name', 'asc')->get();
 
         return Inertia::render('Admin/Attribute/Index', [
-            'page' => $page,
-            'attributes' => AttributeResource::collection($attributes),
+            'pageNumber' => $page,
+            'attributes' => $attributes,
+            // 'attributes' => AttributeResource::collection($attributes),
             'groups' => $groups,
             'search' => $request->only('q'),
         ]);

@@ -19,8 +19,10 @@ class GroupResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'name' => $this->getTranslation('name', $locale),
-            'label' => $this->getTranslation('label', $locale),
+            // 'name' => $this->getTranslation('name', $locale),
+            // 'label' => $this->getTranslation('label', $locale),
+            'name' => $this->name,
+            'label' => $this->label,
             'order' => $this->order,
             'icon' => $this->icon,
             'score_weight' => $this->score_weight,
