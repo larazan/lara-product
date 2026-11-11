@@ -266,6 +266,48 @@ class ProductController extends Controller
         ]);
     }
 
+    private function getVariantAttributes(int $categoryId, ?string $locale = null)
+    {
+        $locale ??= app()->getLocale();
+
+        return CategoryAttribute::query()
+            ->where('category_id', $categoryId)
+            ->where('is_variant_defining', true)
+            ->with('attribute')
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn($item) => $item->attribute && $item->attribute->is_active)
+            ->map(function ($item) use ($locale) {
+                $attribute = $item->attribute;
+
+                return [
+                    'id' => $attribute->id,
+                    'slug' => $attribute->slug,
+                    'name' => $attribute->getTranslation('name', $locale),
+                    'label' => $attribute->getTranslation('label', $locale),
+                    'type' => $attribute->type,
+                    'unit' => $attribute->unit,
+                    'options' => $attribute->options ?? [],
+                    'is_required' => (bool) $item->is_required,
+                    'sort_order' => $item->sort_order,
+                ];
+            })
+            ->values();
+    }
+
+    public function variantAttributes(Request $request)
+    {
+        $validated = $request->validate([
+            'category_id' => ['required', 'exists:categories,id'],
+        ]);
+
+        return response()->json([
+            'data' => $this->getVariantAttributes(
+                (int) $validated['category_id']
+            ),
+        ]);
+    }
+
     public function storeCategory(Request $request)
     {
         $request->validate([

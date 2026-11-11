@@ -95,7 +95,7 @@ class AttributeGroupController extends Controller
         return redirect()->back()->with('success', 'Attribute Group deleted successfully.');
     }
 
-    public function toggle(Category $attribute_group, Request $request)
+    public function toggle(AttributeGroup $attribute_group, Request $request)
     {
         $request->validate([
             'is_active' => 'required|boolean',

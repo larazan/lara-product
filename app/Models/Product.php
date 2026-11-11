@@ -197,6 +197,29 @@ class Product extends Model
             ->where('is_default', true)
             ->where('is_active', true);
     }
+
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Label::class,
+            'product_labels'
+        )
+            ->using(ProductLabel::class)
+            ->withPivot([
+                'id',
+                'value',
+                'notes',
+                'source',
+                'is_verified',
+                'verified_at',
+            ])
+            ->withTimestamps();
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(ProductRegistration::class);
+    }
     
     /*
     |--------------------------------------------------------------------------

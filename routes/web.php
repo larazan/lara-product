@@ -17,6 +17,9 @@ use App\Http\Controllers\Admin\ContactController as ContactAdminController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FaqController as FaqAdminController;
 use App\Http\Controllers\Admin\IngredientController;
+use App\Http\Controllers\Admin\LabelController;
+use App\Http\Controllers\Admin\LabelGroupController;
+use App\Http\Controllers\Admin\CategoryLabelController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProductController as ProductAdminController;
@@ -117,6 +120,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::put('/category-attributes/{attribute}/score', [CategoryAttributeController::class, 'score'])->name('admin.category-attributes.toggle');
     Route::delete('/category-attributes/bulk-delete', [CategoryAttributeController::class, 'bulkDelete'])->name('admin.category-attributes.bulk-delete');
 
+    // category label
+    Route::get('/category-labels', [CategoryLabelController::class, 'index'])->name('admin.category-labels.index');
+    Route::get('/category-label/create', [CategoryLabelController::class, 'create'])->name('admin.category-label.create');
+    Route::post('/category-label/store', [CategoryLabelController::class, 'store'])->name('admin.category-label.store');
+    Route::put('/category-label/edit/{id}', [CategoryLabelController::class, 'edit'])->name('admin.category-label.edit');
+    Route::put('/category-label/update/{id}', [CategoryLabelController::class, 'update'])->name('admin.category-label.update');
+    Route::delete('/category-label/delete/{id}', [CategoryLabelController::class, 'destroy'])->name('admin.category-label.destroy');
+    Route::put('/category-labels/{attribute}/require', [CategoryLabelController::class, 'require'])->name('admin.category-labels.toggle');
+    Route::put('/category-labels/{attribute}/score', [CategoryLabelController::class, 'score'])->name('admin.category-labels.toggle');
+    Route::delete('/category-labels/bulk-delete', [CategoryLabelController::class, 'bulkDelete'])->name('admin.category-labels.bulk-delete');
+
     // company
     Route::get('/companies', [CompanyAdminController::class, 'index'])->name('admin.companies.index');
     Route::post('/company/create', [CompanyAdminController::class, 'store'])->name('admin.companies.create');
@@ -148,6 +162,23 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::delete('/ingredient/delete/{id}', [IngredientController::class, 'destroy'])->name('admin.ingredient.destroy');
     Route::put('/ingredients/{ingredient}/toggle', [IngredientController::class, 'toggle'])->name('admin.ingredients.toggle');
     Route::delete('/ingredient/bulk-delete', [IngredientController::class, 'bulkDelete'])->name('admin.ingredients.bulk-delete');
+
+    // label
+    Route::resource('labels', LabelController::class)->except(['show']);
+    Route::get('/labels', [LabelController::class, 'index'])->name('admin.labels.index');
+    Route::post('/label/create', [LabelController::class, 'store'])->name('admin.label.create');
+    Route::put('/label/update/{id}', [LabelController::class, 'update'])->name('admin.label.update');
+    Route::delete('/label/delete/{id}', [LabelController::class, 'destroy'])->name('admin.label.destroy');
+    Route::put('/labels/{label}/toggle', [LabelController::class, 'toggle'])->name('admin.labels.toggle');
+    Route::delete('/labels/bulk-delete', [LabelController::class, 'bulkDelete'])->name('admin.labels.bulk-delete');
+
+    // label group
+    Route::get('/label-groups', [LabelGroupController::class, 'index'])->name('admin.label-groups.index');
+    Route::post('/label-group/create', [LabelGroupController::class, 'store'])->name('admin.label-group.create');
+    Route::put('/label-group/update/{id}', [LabelGroupController::class, 'update'])->name('admin.label-group.update');
+    Route::delete('/label-group/delete/{id}', [LabelGroupController::class, 'destroy'])->name('admin.label-group.destroy');
+    Route::put('/label-groups/{group}/toggle', [LabelGroupController::class, 'toggle'])->name('admin.label-groups.toggle');
+    Route::delete('/label-groups/bulk-delete', [LabelGroupController::class, 'bulkDelete'])->name('admin.label-groups.bulk-delete');
 
     // product
     Route::get('/products', [ProductAdminController::class, 'index'])->name('admin.products.index');

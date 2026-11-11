@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Sluggable\HasSlug; // Import HasSlug
 use Spatie\Sluggable\SlugOptions; // Import SlugOptions
@@ -129,6 +130,22 @@ class Category extends Model
             'attribute_id'
         )
             ->withPivot('is_required')
+            ->withTimestamps();
+    }
+
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Label::class,
+            'category_labels'
+        )
+            ->using(CategoryLabel::class)
+            ->withPivot([
+                'id',
+                'is_required',
+                'is_active',
+                'sort_order',
+            ])
             ->withTimestamps();
     }
 

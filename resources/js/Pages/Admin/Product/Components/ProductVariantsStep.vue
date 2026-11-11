@@ -1,349 +1,320 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 
 const props = defineProps({
-    form: {
-        type: Object,
-        required: true,
-    },
-    // Daftar atribut kategori yang boleh digunakan untuk membedakan varian.
-    // Contoh: [{ id: 1, name: 'RAM', type: 'select', options: [...] }]
-    attributes: {
-        type: Array,
-        default: () => [],
-    },
-    currency: {
-        type: String,
-        default: 'IDR',
-    },
+    form: { type: Object, required: true },
+    attributes: { type: Array, default: () => [] },
 })
 
-const selectedAttributeIds = computed(() => (props.form.variant_attribute_ids ?? []).map(Number))
-const expandedVariantIds = ref([])
+const page = usePage()
 
-const variantAttributes = computed(() =>
-    props.attributes.filter(attribute =>
-        selectedAttributeIds.value.includes(Number(attribute.id))
-    )
-)
+const locale = computed(() => page.props.locale || 'id')
 
-function createVariant() {
-    const nextNumber = (props.form.variants?.length ?? 0) + 1
+const variants = computed(() => props.form.variants || [])
 
-    props.form.variants.push({
-        name: `Varian ${nextNumber}`,
-        sku: '',
-        price: null,
-        compare_at_price: null,
-        stock: 0,
-        is_active: true,
-        attributes: {},
-    })
-
-    const newIndex = props.form.variants.length - 1
-    expandedVariantIds.value.push(newIndex)
+function addVariant() {
+    props.form.variants = [
+        ...variants.value,
+        {
+            id: null,
+            name: '',
+            sku: '',
+            barcode: '',
+            price: '',
+            currency: 'IDR',
+            is_default: variants.value.length === 0,
+            is_active: true,
+            sort_order: variants.value.length,
+            attributes: {},
+        },
+    ]
 }
 
 function removeVariant(index) {
-    props.form.variants.splice(index, 1)
-    expandedVariantIds.value = expandedVariantIds.value
-        .filter(i => i !== index)
-        .map(i => i > index ? i - 1 : i)
-}
+    props.form.variants = variants.value.filter((_, i) => i !== index)
 
-function toggleExpanded(index) {
-    if (expandedVariantIds.value.includes(index)) {
-        expandedVariantIds.value = expandedVariantIds.value.filter(i => i !== index)
-    } else {
-        expandedVariantIds.value.push(index)
-    }
-}
-
-function isExpanded(index) {
-    return expandedVariantIds.value.includes(index)
-}
-
-function attributeLabel(attribute) {
-    const label = attribute.label || attribute.name || `Atribut ${attribute.id}`
-    return typeof label === 'object'
-        ? (label[Object.keys(label)[0]] ?? `Atribut ${attribute.id}`)
-        : label
-}
-
-function optionsFor(attribute) {
-    const options = attribute.options ?? []
-    if (!Array.isArray(options)) return []
-
-    return options.map(option => {
-        if (typeof option === 'string' || typeof option === 'number') {
-            return { value: option, label: String(option) }
-        }
-
-        return {
-            value: option.value ?? option.id ?? option.label,
-            label: option.label ?? option.name ?? String(option.value ?? ''),
-        }
+    props.form.variants.forEach((variant, i) => {
+        variant.sort_order = i
+        variant.is_default = i === 0
     })
 }
 
-function formatCurrency(value) {
-    if (value === null || value === '' || Number.isNaN(Number(value))) return '—'
-
-    try {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: props.currency,
-            maximumFractionDigits: 0,
-        }).format(Number(value))
-    } catch {
-        return String(value)
-    }
+function updateVariant(index, key, value) {
+    const items = [...variants.value]
+    items[index] = { ...items[index], [key]: value }
+    props.form.variants = items
 }
 
-function duplicateVariant(index) {
-    const original = props.form.variants[index]
-    const copy = {
-        ...original,
-        name: `${original.name || 'Varian'} (salinan)`,
-        sku: '',
-        attributes: { ...(original.attributes ?? {}) },
+function updateAttribute(index, attributeId, value) {
+    const items = [...variants.value]
+    items[index] = {
+        ...items[index],
+        attributes: {
+            ...(items[index].attributes || {}),
+            [attributeId]: value,
+        },
     }
-
-    props.form.variants.splice(index + 1, 0, copy)
-    expandedVariantIds.value = expandedVariantIds.value.map(i => i > index ? i + 1 : i)
-    expandedVariantIds.value.push(index + 1)
+    props.form.variants = items
 }
 
-function updateSelectedAttributes(value) {
-    props.form.variant_attribute_ids = value.map(Number)
+function setDefault(index) {
+    props.form.variants = variants.value.map((variant, i) => ({
+        ...variant,
+        is_default: i === index,
+    }))
+}
 
-    for (const variant of props.form.variants) {
-        variant.attributes ??= {}
+function optionValue(option) {
+    return typeof option === 'object'
+        ? (option.value ?? option.id ?? '')
+        : option
+}
 
-        for (const key of Object.keys(variant.attributes)) {
-            if (!selectedAttributeIds.value.includes(Number(key))) {
-                delete variant.attributes[key]
-            }
-        }
+function optionLabel(option) {
+    if (typeof option !== 'object') return option
 
-        for (const id of selectedAttributeIds.value) {
-            if (!(id in variant.attributes)) variant.attributes[id] = ''
-        }
+    const label = option.label ?? option.name ?? option.value
+
+    if (typeof label === 'object' && label !== null) {
+        return label[locale.value] ?? label.en ?? Object.values(label)[0]
     }
+
+    return label ?? ''
+}
+
+function attributeValue(variant, attributeId) {
+    return variant.attributes?.[attributeId] ?? ''
+}
+
+function parseOptions(attribute) {
+    const options = attribute.options || []
+
+    if (Array.isArray(options)) return options
+
+    // Mendukung format JSON object {key: label}.
+    if (typeof options === 'object') {
+        return Object.entries(options).map(([value, label]) => ({
+            value,
+            label,
+        }))
+    }
+
+    return []
+}
+
+function attributeName(attribute) {
+    return attribute.label || attribute.name || attribute.slug
 }
 </script>
 
 <template>
-    <section class="space-y-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="space-y-6">
+        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-                <h2 class="text-lg font-semibold text-gray-900">Varian Produk</h2>
+                <h3 class="text-base font-semibold text-gray-900">
+                    Product Variants
+                </h3>
                 <p class="mt-1 text-sm text-gray-500">
-                    Tambahkan pilihan varian seperti RAM, kapasitas penyimpanan, warna, atau ukuran.
-                    Jika produk tidak memiliki varian, bagian ini boleh dikosongkan.
+                    Tambahkan variasi produk berdasarkan atribut yang telah
+                    ditentukan pada kategori.
                 </p>
             </div>
 
             <button type="button"
-                class="inline-flex shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                @click="createVariant">
-                <span class="mr-2 text-lg leading-none">+</span>
-                Tambah Varian
+                class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                @click="addVariant">
+                + Add Variant
             </button>
         </div>
 
-        <div class="rounded-xl border border-gray-200 bg-white p-4">
-            <label for="variant-attributes" class="block text-sm font-medium text-gray-700">
-                Atribut pembeda varian
-            </label>
-            <p class="mt-1 text-xs text-gray-500">
-                Pilih atribut yang akan diisi pada setiap varian. Pilihan ini hanya menentukan
-                atribut yang tampil di form.
-            </p>
-
-            <select id="variant-attributes" multiple :value="selectedAttributeIds"
-                class="mt-3 min-h-28 w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                @change="updateSelectedAttributes(Array.from($event.target.selectedOptions, option => option.value))">
-                <option v-for="attribute in attributes" :key="attribute.id" :value="attribute.id">
-                    {{ attributeLabel(attribute) }}
-                </option>
-            </select>
-
-            <p v-if="attributes.length === 0" class="mt-2 text-xs text-amber-700">
-                Belum ada daftar atribut yang tersedia. Anda tetap bisa membuat varian dengan nama,
-                SKU, harga, dan stok.
-            </p>
+        <div v-if="!attributes.length"
+            class="rounded-lg border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+            Belum ada atribut pembeda varian untuk kategori ini.
+            Atur atribut melalui Category Attributes dan aktifkan
+            <strong>is_variant_defining</strong>.
         </div>
 
-        <div v-if="!form.variants?.length"
-            class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center">
-            <div
-                class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl text-gray-400 ring-1 ring-gray-200">
-                +
-            </div>
-            <h3 class="mt-4 text-sm font-semibold text-gray-900">Belum ada varian</h3>
-            <p class="mt-1 text-sm text-gray-500">
-                Tambahkan varian jika produk memiliki perbedaan ukuran, warna, kapasitas, atau konfigurasi.
-            </p>
-            <button type="button"
-                class="mt-4 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                @click="createVariant">
-                Tambah Varian Pertama
+        <div v-if="!variants.length" class="rounded-xl border border-dashed border-gray-300 p-8 text-center">
+            <p class="text-sm text-gray-500">Belum ada varian produk.</p>
+            <button type="button" class="mt-3 text-sm font-semibold text-indigo-600" @click="addVariant">
+                + Tambahkan varian pertama
             </button>
         </div>
 
-        <div v-else class="space-y-4">
-            <article v-for="(variant, index) in form.variants" :key="index"
-                class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                <div class="flex items-center gap-3 border-b border-gray-100 bg-gray-50 px-4 py-3">
-                    <button type="button" class="flex min-w-0 flex-1 items-center gap-3 text-left"
-                        :aria-expanded="isExpanded(index)" @click="toggleExpanded(index)">
-                        <span
-                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-sm font-semibold text-indigo-700">
-                            {{ index + 1 }}
-                        </span>
-                        <span class="min-w-0 flex-1">
-                            <span class="block truncate text-sm font-semibold text-gray-900">
-                                {{ variant.name || `Varian ${index + 1}` }}
-                            </span>
-                            <span class="mt-0.5 block text-xs text-gray-500">
-                                {{ variant.sku || 'SKU belum diisi' }}
-                                <span class="mx-1">·</span>
-                                {{ formatCurrency(variant.price) }}
-                            </span>
-                        </span>
-                        <span class="text-gray-400">{{ isExpanded(index) ? '−' : '+' }}</span>
-                    </button>
+        <div v-for="(variant, index) in variants" :key="variant.id ?? `new-${index}`"
+            class="space-y-5 rounded-xl border border-gray-200 bg-white p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <h4 class="font-semibold text-gray-900">
+                        Variant {{ index + 1 }}
+                    </h4>
 
-                    <span class="rounded-full px-2.5 py-1 text-xs font-medium"
-                        :class="variant.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'">
-                        {{ variant.is_active ? 'Aktif' : 'Nonaktif' }}
+                    <span v-if="variant.is_default"
+                        class="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">
+                        Default
                     </span>
-                    <button type="button" class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-                        title="Duplikasikan varian" @click="duplicateVariant(index)">
-                        Duplikat
-                    </button>
-                    <button type="button" class="text-sm font-medium text-red-600 hover:text-red-800"
-                        title="Hapus varian" @click="removeVariant(index)">
-                        Hapus
-                    </button>
                 </div>
 
-                <div v-if="isExpanded(index)" class="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-                    <div>
-                        <label :for="`variant-name-${index}`" class="mb-1.5 block text-sm font-medium text-gray-700">
-                            Nama varian <span class="text-red-500">*</span>
+                <button type="button" class="text-sm font-medium text-red-600 hover:text-red-800"
+                    @click="removeVariant(index)">
+                    Remove
+                </button>
+            </div>
+
+            <!-- General information -->
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-700">
+                        Variant Name *
+                    </span>
+                    <input :value="variant.name" type="text" required maxlength="255"
+                        placeholder="Contoh: Black / 128GB" class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                        @input="updateVariant(index, 'name', $event.target.value)" />
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-700">
+                        SKU
+                    </span>
+                    <input :value="variant.sku" type="text" maxlength="255" placeholder="SKU-001"
+                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                        @input="updateVariant(index, 'sku', $event.target.value)" />
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-700">
+                        Barcode
+                    </span>
+                    <input :value="variant.barcode" type="text" maxlength="255" placeholder="Barcode"
+                        class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                        @input="updateVariant(index, 'barcode', $event.target.value)" />
+                </label>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium text-gray-700">
+                            Price
+                        </span>
+                        <input :value="variant.price" type="number" min="0" step="any"
+                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @input="updateVariant(index, 'price', $event.target.value)" />
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium text-gray-700">
+                            Currency
+                        </span>
+                        <select :value="variant.currency || 'IDR'"
+                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @change="updateVariant(index, 'currency', $event.target.value)">
+                            <option value="IDR">IDR</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="JPY">JPY</option>
+                            <option value="SGD">SGD</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Dynamic variant attributes -->
+            <div v-if="attributes.length" class="border-t border-gray-100 pt-4">
+                <h5 class="mb-3 text-sm font-semibold text-gray-800">
+                    Variant Attributes
+                </h5>
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div v-for="attribute in attributes" :key="attribute.id" class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700">
+                            {{ attributeName(attribute) }}
+                            <span v-if="attribute.is_required" class="text-red-500">*</span>
+                            <span v-if="attribute.unit" class="text-gray-400">
+                                ({{ attribute.unit }})
+                            </span>
                         </label>
-                        <input :id="`variant-name-${index}`" v-model="variant.name" type="text"
-                            :name="`variants.${index}.name`" placeholder="Contoh: RAM 8 GB / 128 GB"
-                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                        <p v-if="form.errors?.[`variants.${index}.name`]" class="mt-1 text-xs text-red-600">
-                            {{ form.errors[`variants.${index}.name`] }}
-                        </p>
-                    </div>
 
-                    <div>
-                        <label :for="`variant-sku-${index}`" class="mb-1.5 block text-sm font-medium text-gray-700">
-                            SKU
+                        <!-- Text -->
+                        <input v-if="attribute.type === 'text'" :value="attributeValue(variant, attribute.id)"
+                            type="text" class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @input="updateAttribute(index, attribute.id, $event.target.value)" />
+
+                        <!-- Textarea -->
+                        <textarea v-else-if="attribute.type === 'textarea'"
+                            :value="attributeValue(variant, attribute.id)" rows="2"
+                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @input="updateAttribute(index, attribute.id, $event.target.value)"></textarea>
+
+                        <!-- Number -->
+                        <input v-else-if="attribute.type === 'number'" :value="attributeValue(variant, attribute.id)"
+                            type="number" step="1" class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @input="updateAttribute(index, attribute.id, $event.target.value)" />
+
+                        <!-- Decimal -->
+                        <input v-else-if="attribute.type === 'decimal'" :value="attributeValue(variant, attribute.id)"
+                            type="number" step="any" class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @input="updateAttribute(index, attribute.id, $event.target.value)" />
+
+                        <!-- Boolean -->
+                        <label v-else-if="attribute.type === 'boolean'"
+                            class="flex items-center gap-2 rounded-lg border border-gray-300 p-3">
+                            <input
+                                :checked="attributeValue(variant, attribute.id) === true || attributeValue(variant, attribute.id) === '1' || attributeValue(variant, attribute.id) === 'true'"
+                                type="checkbox" class="rounded border-gray-300 text-indigo-600"
+                                @change="updateAttribute(index, attribute.id, $event.target.checked)" />
+                            <span class="text-sm text-gray-700">Yes / True</span>
                         </label>
-                        <input :id="`variant-sku-${index}`" v-model="variant.sku" type="text"
-                            placeholder="Contoh: PHONE-8-128"
-                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                        <p v-if="form.errors?.[`variants.${index}.sku`]" class="mt-1 text-xs text-red-600">
-                            {{ form.errors[`variants.${index}.sku`] }}
-                        </p>
-                    </div>
 
-                    <div>
-                        <label :for="`variant-price-${index}`" class="mb-1.5 block text-sm font-medium text-gray-700">
-                            Harga <span class="text-red-500">*</span>
-                        </label>
-                        <input :id="`variant-price-${index}`" v-model="variant.price" type="number" min="0" step="1"
-                            placeholder="Contoh: 4999000"
-                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                        <p v-if="form.errors?.[`variants.${index}.price`]" class="mt-1 text-xs text-red-600">
-                            {{ form.errors[`variants.${index}.price`] }}
-                        </p>
-                    </div>
+                        <!-- Select -->
+                        <select v-else-if="attribute.type === 'select'" :value="attributeValue(variant, attribute.id)"
+                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @change="updateAttribute(index, attribute.id, $event.target.value)">
+                            <option value="">Select {{ attributeName(attribute) }}</option>
+                            <option v-for="option in parseOptions(attribute)" :key="optionValue(option)"
+                                :value="optionValue(option)">
+                                {{ optionLabel(option) }}
+                            </option>
+                        </select>
 
-                    <div>
-                        <label :for="`variant-compare-price-${index}`"
-                            class="mb-1.5 block text-sm font-medium text-gray-700">
-                            Harga sebelum diskon
-                        </label>
-                        <input :id="`variant-compare-price-${index}`" v-model="variant.compare_at_price" type="number"
-                            min="0" step="1" placeholder="Opsional"
-                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    </div>
+                        <!-- Multiselect -->
+                        <select v-else-if="attribute.type === 'multiselect'"
+                            :value="attributeValue(variant, attribute.id)" multiple
+                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @change="updateAttribute(index, attribute.id, Array.from($event.target.selectedOptions).map(option => option.value))">
+                            <option v-for="option in parseOptions(attribute)" :key="optionValue(option)"
+                                :value="optionValue(option)">
+                                {{ optionLabel(option) }}
+                            </option>
+                        </select>
 
-                    <div>
-                        <label :for="`variant-stock-${index}`" class="mb-1.5 block text-sm font-medium text-gray-700">
-                            Stok
-                        </label>
-                        <input :id="`variant-stock-${index}`" v-model="variant.stock" type="number" min="0" step="1"
-                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    </div>
+                        <!-- Date -->
+                        <input v-else-if="attribute.type === 'date'" :value="attributeValue(variant, attribute.id)"
+                            type="date" class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @input="updateAttribute(index, attribute.id, $event.target.value)" />
 
-                    <div class="flex items-center">
-                        <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-                            <input v-model="variant.is_active" type="checkbox"
-                                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                            Varian aktif
-                        </label>
-                    </div>
-
-                    <div v-if="variantAttributes.length" class="md:col-span-2">
-                        <h4 class="mb-3 text-sm font-semibold text-gray-900">Atribut varian</h4>
-                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div v-for="attribute in variantAttributes" :key="attribute.id">
-                                <label :for="`variant-${index}-attribute-${attribute.id}`"
-                                    class="mb-1.5 block text-sm font-medium text-gray-700">
-                                    {{ attributeLabel(attribute) }}
-                                    <span v-if="attribute.unit" class="font-normal text-gray-500">
-                                        ({{ attribute.unit }})
-                                    </span>
-                                </label>
-
-                                <select v-if="attribute.type === 'select' && optionsFor(attribute).length"
-                                    :id="`variant-${index}-attribute-${attribute.id}`"
-                                    v-model="variant.attributes[attribute.id]"
-                                    class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Pilih {{ attributeLabel(attribute) }}</option>
-                                    <option v-for="option in optionsFor(attribute)" :key="String(option.value)"
-                                        :value="option.value">
-                                        {{ option.label }}
-                                    </option>
-                                </select>
-
-                                <select v-else-if="attribute.type === 'boolean'"
-                                    :id="`variant-${index}-attribute-${attribute.id}`"
-                                    v-model="variant.attributes[attribute.id]"
-                                    class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Pilih</option>
-                                    <option value="1">Ya</option>
-                                    <option value="0">Tidak</option>
-                                </select>
-
-                                <input v-else :id="`variant-${index}-attribute-${attribute.id}`"
-                                    v-model="variant.attributes[attribute.id]"
-                                    :type="attribute.type === 'number' ? 'number' : 'text'"
-                                    :step="attribute.type === 'number' ? 'any' : undefined"
-                                    :placeholder="`Masukkan ${attributeLabel(attribute).toLowerCase()}`"
-                                    class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                            </div>
-                        </div>
+                        <!-- URL -->
+                        <input v-else-if="attribute.type === 'url'" :value="attributeValue(variant, attribute.id)"
+                            type="url" placeholder="https://..."
+                            class="w-full rounded-lg border-gray-300 text-sm shadow-sm"
+                            @input="updateAttribute(index, attribute.id, $event.target.value)" />
                     </div>
                 </div>
-            </article>
-        </div>
+            </div>
 
-        <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
-            <p class="font-medium">Catatan penyimpanan</p>
-            <p class="mt-1">
-                Data di atas masih berada di <code>form.variants</code>. Pastikan controller menyimpan
-                varian ke tabel <code>product_variants</code> dan atributnya ke tabel
-                <code>product_variant_attribute_values</code> menggunakan transaksi database.
-            </p>
+            <!-- Status -->
+            <div class="flex flex-wrap items-center gap-6 border-t border-gray-100 pt-4">
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input :checked="variant.is_default" type="radio" :name="'default_variant'"
+                        class="border-gray-300 text-indigo-600" @change="setDefault(index)" />
+                    Default variant
+                </label>
+
+                <label class="flex items-center gap-2 text-sm text-gray-700">
+                    <input :checked="variant.is_active" type="checkbox" class="rounded border-gray-300 text-indigo-600"
+                        @change="updateVariant(index, 'is_active', $event.target.checked)" />
+                    Active
+                </label>
+            </div>
         </div>
-    </section>
+    </div>
 </template>
