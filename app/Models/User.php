@@ -5,6 +5,8 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -82,5 +84,56 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Product::class, 'bookmarks')
             ->withTimestamps();
+    }
+
+    public function advertiserWallet(): HasOne
+    {
+        return $this->hasOne(AdvertiserWallet::class);
+    }
+
+    public function adCampaigns(): HasMany
+    {
+        return $this->hasMany(AdCampaign::class);
+    }
+
+    public function advertiserTransactions(): HasMany
+    {
+        return $this->hasMany(AdvertiserTransaction::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function subscribed()
+    {
+        return $this->subscription && $this->subscription->isActive();
+    }
+
+    public function activeSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('status', 'active')
+            ->where('end_date', '>', now())
+            ->latestOfMany();
+    }
+
+    public function hasActiveSubscription()
+    {
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->where('end_date', '>', now())
+            ->exists();
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function isPremium(): bool
+    {
+        return (bool) $this->activeSubscription();
     }
 }

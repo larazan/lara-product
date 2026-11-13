@@ -36,7 +36,9 @@ class DatabaseSeeder extends Seeder
             // CategoryAttributeSeeder::class,
             // NewIngredientSeeder::class,
             // RoleSeeder::class,
-            GlobalLabelSeeder::class,
+            // GlobalLabelSeeder::class,
+            AdPackageSeeder::class,
+            AdPlacementSeeder::class,
         ]);
     }
 }

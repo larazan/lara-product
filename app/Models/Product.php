@@ -207,6 +207,7 @@ class Product extends Model
             ->using(ProductLabel::class)
             ->withPivot([
                 'id',
+                'is_present',
                 'value',
                 'notes',
                 'source',

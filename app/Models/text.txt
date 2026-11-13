@@ -1,3 +1,110 @@
+1. ad_packages
+Paket yang dijual kepada pengiklan.
+
+id, name, price, token_amount, is_active
+
+2. advertiser_wallets
+Saldo token masing-masing pengiklan.
+
+id, user_id, balance_tokens, lifetime_purchased
+
+3. advertiser_transactions
+Riwayat pembelian dan pemakaian token.
+
+id, user_id, type, token_amount, reference_id
+
+4. ad_campaigns
+Kampanye yang dibuat pengiklan.
+
+id, user_id, name, status, starts_at, ends_at, budget_tokens
+
+5. ad_creatives
+Konten iklan yang akan ditampilkan.
+
+id, campaign_id, title, description, image, target_url, product_id
+
+6. ad_placements
+Jenis posisi iklan yang tersedia.
+
+id, code, name, is_active
+
+7. ad_campaign_placements
+Posisi yang dipilih untuk setiap kampanye.
+
+campaign_id, placement_id, category_id
+
+8. ad_impression_stats
+Pencatatan penayangan iklan.
+
+id, campaign_id, creative_id, placement_id, impressions, date
+
+9. ad_placement_rates dengan kolom:
+- placement_id
+- category_id nullable, jika tarif berbeda menurut kategori
+- tokens_per_1000_impressions
+- starts_at dan ends_at untuk periode tarif
+- is_active
+
+Placement	Tarif per 1.000 impression	Prioritas
+Banner	1 token	Standar
+Listing produk — posisi pertama	2 token	Tinggi
+Modal	3 token	Premium
+Compare product — slot ketiga	4 token	Premium
+
+MODEL
+AdPackage.php
+AdvertiserWallet.php
+AdvertiserTransaction.php
+AdPlacement.php
+AdPlacementRate.php
+AdCampaign.php
+AdCreative.php
+AdCampaignPlacement.php
+AdImpressionStat.php
+AdImpressionEvent.php
+AdClickStat.php
+
+Urutan	Fitur	Jenis
+1	AdPackage	Full CRUD
+2	AdPlacement	Full CRUD
+3	AdPlacementRate	Full CRUD
+4	AdvertiserWallet	Read + Adjustment
+5	AdvertiserTransaction	Read only
+6	AdCampaign	Moderation + Management
+7	AdCreative	Moderation
+8	AdCampaignPlacement	Management
+9	AdImpressionStat	Analytics
+10	AdClickStat	Analytics
+11	AdImpressionEvent	Read only / Detail
+
+Free — pengguna umum
+
+Tetap berguna tanpa perlu berlangganan.
+- Melihat spesifikasi produk.
+- Membandingkan dua atau tiga produk.
+- Melihat skor produk dan radar chart.
+- Melihat kelebihan dan kekurangan produk.
+- Melihat harga dan tautan toko yang tersedia.
+- Menyimpan beberapa perbandingan terakhir.
+- Melihat iklan native yang diberi label dengan jelas.
+
+
+Premium — pengguna serius
+
+Fokus pada fitur yang meningkatkan kualitas keputusan.
+- Bebas iklan.
+- Membandingkan lebih banyak produk sekaligus.
+- Perbandingan tersimpan tanpa batas atau dengan kuota besar.
+- Profil bobot penilaian sesuai kebutuhan pengguna.
+- Analisis produk berdasarkan kebutuhan pribadi.
+- Riwayat harga dan notifikasi penurunan harga.
+- Daftar produk favorit dan daftar belanja.
+- Riwayat perbandingan yang tersinkronisasi antarperangkat.
+- Ekspor hasil perbandingan ke PDF.
+
+
+
+
 superadmin@gmail.net 
 admin@gmail.com
 password

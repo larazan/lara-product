@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\CategoryLabelController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ProductController as ProductAdminController;
+use App\Http\Controllers\Admin\ProductLabelController;
 use App\Http\Controllers\Admin\ReportController as ReportAdminController;
 use App\Http\Controllers\Admin\SettingController as SettingAdminController;
 use App\Http\Controllers\Admin\UserController as UserAdminController;
@@ -191,6 +192,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::put('/products/{company}/toggle', [ProductAdminController::class, 'toggle'])->name('admin.products.toggle');
     Route::delete('/products/bulk-delete', [ProductAdminController::class, 'bulkDelete'])->name('admin.products.bulk-delete');
     Route::get('/products/attributes', [ProductAdminController::class, 'attributes'])->name('admin.products.attributes');
+
+    Route::get('/products/{product}/labels', [ProductLabelController::class, 'edit'])->name('products.labels.edit');
+
+    Route::put('/products/{product}/labels', [ProductLabelController::class, 'update'])->name('products.labels.update');
 
     // report
     Route::get('/reports', [ReportAdminController::class, 'index'])->name('admin.report.index');
